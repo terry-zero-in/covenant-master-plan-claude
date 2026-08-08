@@ -39,7 +39,7 @@ bb89a7b8a71a87104f54755184c0bb76dd6d9e23456e8710032f8fcade366667  ./surface-brie
 f4656a900005b2e3956f127381f62e2904c678f78c25c48c2c0bb446a1bb51e9  ./surface-briefs/inbox.md
 c27959ba3c43958b97175789a8cf1d9e631ebbbc4fa97a343d7380ff2ffeecd2  ./surface-briefs/intake-holding.md
 ecc23b5e33a704e2c9cff143c3ef50a5576a7ac4fcac2ce1a906f890b847b85d  ./surface-briefs/lender-qa-correspondence.md
-2b775b4850941e517ab11016617a46c79147d20ad8ba926de9159651bde88c87  ./surface-briefs/onboarding-signin-import.md
+6fb37e48498f963556741e12a5c63974acf0f7a751be1c18155d111e7c35d439  ./surface-briefs/onboarding-signin-import.md
 b2e9a4baa08bd81aaa4a8d7086a0263cf81945839edf7d6dfeb178c481c73d27  ./surface-briefs/portfolio-loans-loan-detail.md
 3655d26bebcdf3519b6c322f025ef80c7c4a4beb6e7631863e4dd07500e35d3b  ./surface-briefs/rent-roll-teaser-placement.md
 4f2d2445e1e9b00c277967dc2577fea589f10cf87ad437037514e923f96f9b3a  ./surface-briefs/reports.md

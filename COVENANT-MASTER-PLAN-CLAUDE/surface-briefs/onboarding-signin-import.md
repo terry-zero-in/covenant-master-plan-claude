@@ -86,6 +86,8 @@ Reopen rule: any predicate that later evaluates false (send grant revoked; the o
 
 P0 acceptance rides this machine: every link on `/sign-in` resolves inside Covenant (C-7; U12-F2); the state machine contains no edge that leaves the product.
 
+Edge cases: an already-authenticated user hitting `/sign-in` redirects to Home (or the guide); an authenticated user with a pending invite to a second org sees the accept choice, never an auto-join (multi-org membership is explicit).
+
 ### 5.2 The arc (per setup item, Stripe-style)
 
 Each SetupGuideItem: `missing` → `currently-due` (its prerequisites met) → `done` (satisfying record exists) — recomputed from state, never checked off manually; an item whose satisfying record is later removed (e.g., the only send grant revoked) *reopens*, and the guide card returns to Home (R6 research: Ramp — persists until genuinely done).
@@ -123,6 +125,8 @@ Undo eligibility: until any created loan has a confirmed requirement schedule, a
 | certified (void-on-change) | Not reachable from this surface — stated so nobody wires a shortcut |
 | sent/sealed | Not reachable from this surface |
 | recovery/undo | The batch undo (§5.3 — the one-click reversal HubSpot lacks); org creation is not undoable from here (support path); grants/address revert via Settings history |
+
+One activation-specific exception deserves naming: if the user's *first forwarded email* cannot be recognized (unknown sender, ambiguous content), the waiting card flips to a gentle routing ask — "we received it; tell us which loan this belongs to" — linking into the Intake queue's resolution flow (owned there, 03 §2 unrecognized-arrival). The first-contact failure must be the product at its most graceful, because it is the moment the user decided to trust the address.
 
 Audit-event taxonomy for this surface (one ActivityEvent store, ticket-ready names): `onboarding.org_created` · `onboarding.guide_item_done|reopened` (item, satisfying/invalidating record) · `import.batch_staged|validated|committed|undone` · `import.row_repaired` (line, old→new) · `import.row_excluded` · `import.duplicate_resolved` (choice) · `onboarding.magic_upload_received` (docId, hash) · `onboarding.activation_first_arrival` (arrival ref) — plus the embedded acts' own events at their owners (`settings.team.grant_changed`, `settings.intake.address_minted`, invite events).
 
@@ -246,6 +250,7 @@ Step panes, exactly:
 - Minimum viable dimensions: 1152×720 (frame law, 08 §9); below it, the import surface remains usable (registers law) while the magic path shows the "larger window required" state only on the embedded extraction split.
 - Tab stacking/replacement: not applicable (single window).
 - No silent compression: sidebar→stepper and table-column chips are the two explicit degradations.
+- The activation card and the demo banner (D-6) render at every viewport — neither ever drops out of a narrow layout (the one is the arc's payoff, the other is a legal-honesty guarantee).
 
 ## 11. Components and exact anatomy
 
