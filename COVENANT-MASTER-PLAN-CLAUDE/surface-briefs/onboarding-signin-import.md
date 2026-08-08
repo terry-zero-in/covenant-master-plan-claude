@@ -18,7 +18,12 @@
 - Decisions made here: org identity + mode (owner vs PMC); which book path (upload loan documents — the magic path — vs CSV bulk import); column mappings and row repairs (import); who certifies and who sends (signers); whether to invite the team now or later; when to forward the first lender email (activation).
 - Questions the surface must answer in scan order: (1) where am I in setup and what's left? (2) what does Covenant need from me *right now*? (3) what happens when I finish this step? (4) can I stop and come back? (yes — resumable, always visible); (5) what did that import just create, and can I take it back?
 - What the user should not have to decide here: covenant thresholds or test definitions (extraction proposes from the loan's own documents; confirmation happens on the Extraction & Confirmation surface); lender-form semantics; anything about periods (the engine opens them from confirmed due-rules, 03 §5); design or layout choices.
-- Entry paths: `/sign-in` → create-org or accept-invite; a Ramp-style persistent Setup Guide card on Home re-enters the arc at the first incomplete step (R6 research: Ramp — the guide persists until genuinely done, not until first dismissal); `/loans` empty state → `/loans/import` or `/onboarding/book/upload`; palette ("import loans", "setup guide").
+- Entry paths, exactly:
+  - `/sign-in` → create-org or accept-invite (the only two doors into an org).
+  - The Ramp-style persistent Setup Guide card on Home re-enters the arc at the first incomplete step (R6 research: Ramp — the guide persists until genuinely done, not until first dismissal).
+  - `/loans` empty state → `/loans/import` or `/onboarding/book/upload` (the arc's step 2, reachable without re-running steps already done).
+  - Palette: "Setup guide", "Import loans", "Upload loan documents".
+  - If D-6 approves: `/demo` → "sign in to work your own" → `/sign-in`.
 - Exit paths: every step exits to the Setup Guide; arc completion lands on Home with a real your-move (the DIRECTION's step 6); the import surface exits to `/loans` filtered to the created batch; sign-in exits only into Covenant surfaces (P0).
 - Completion/advancement conditions: the requirements hash empties (R6 research: Stripe — the checklist is computed from what is actually missing, not from a hardcoded step list): org exists · ≥1 loan with a confirmed requirement schedule · certify and send grantees designated · intake address issued · first period open. Team invites are listed but never block completion.
 
@@ -281,10 +286,11 @@ Step panes, exactly:
 - Hover: sample values expand; error chips show detail; guide steps show their satisfying record.
 - Focus: each step autofocuses; visible accent-family ring everywhere.
 - Keyboard: full arc completable keyboard-only (dropzones accept browse; pickers are comboboxes); `⌘K` from any step ("skip to invite team", "import loans"); Esc backs out of a step to the guide without losing state; G-chords inactive pre-org, active once the shell mounts.
-- Editing and validation: mapping confirms are per-column explicit acts; row repair is inline edit with the original value preserved and shown struck-through; validation re-runs on repair, live. Field validation rules (deterministic, engine-owned): UPB/figures parse as currency with thousands tolerance; dates parse against common formats with the resolved format shown per column (never guessed silently per cell — one format per column, confirmable); rate parses as percent or decimal with the interpretation displayed ("4.17" → 4.17%); the PMC client column must match an existing Client exactly (no fuzzy client matching — a wrong client scope is a tenancy breach, not a typo).
+- Editing and validation: mapping confirms are per-column explicit acts; row repair is inline edit with the original value preserved and shown struck-through; validation re-runs on repair, live. Field validation rules (deterministic, engine-owned): UPB/figures parse as currency with thousands tolerance; dates parse against common formats with the resolved format shown per column (never guessed silently per cell — one format per column, confirmable); rate parses as percent or decimal with the interpretation displayed ("4.17" → 4.17%); the PMC client column must match an existing Client exactly (no fuzzy client matching — a wrong client scope is a tenancy violation, not a typo).
 - Bulk action: bulk-exclude error rows; bulk-accept high-confidence mappings ("confirm all ≥ high confidence" — one act, logged as one event with the column list).
 - Undo/recovery: the batch undo (§5.3) — reverses every created loan and their guide effects in one transaction, writes `import.batch_undone`, and returns the surface to `validated`; repairs and mappings survive for a corrected re-commit. Where undo is impossible by design: after a created loan is worked (confirmed schedule/filed doc/arrivals) — the commit bar said so up front.
-- Sorting/filtering: results register filters by state (error/repaired/clean/excluded/duplicate); sort by line number default.
+- Sorting/filtering: results register filters by state (error/repaired/clean/excluded/duplicate); sort by line number default; the validation panel's class counts act as one-click filters into the register.
+- Copy affordances: the intake address copies with a confirmation toast naming what was copied; the CSV template downloads with its field documentation embedded as a header-comment row the parser ignores on re-import.
 - Drill-down and return path: a created loan card → `/loans/[loanId]` → back returns to the batch results; guide done-links → owning surfaces → the Home card remains the return anchor.
 - Source-linked selection (lit-row): magic-path proposal fields light their source regions in the embedded extraction view (the app-wide contract, 06 §1); batch rows highlight their CSV source line in a file preview strip.
 - Save/persistence: everything persists continuously (resumable arc — R6: Mercury); the CSV file and all repairs survive sign-out; commit and undo are the only transactional acts.
@@ -327,7 +333,11 @@ Synthesis: Stripe supplies the computed checklist, Mercury the resumable spine, 
 
 ## 15. Domain references
 
-Loan-servicing and financial-close products are consulted for terminology and expected data only: servicer onboarding packets and new-loan boarding checklists (the "loan boarding" notion — lender, loan identifier, UPB, rate structure, maturity, property — is the domain-correct field set for the CSV template, matching the loan master record in 02 §2), and the document-request lists behind agency reporting (evidence: SLOT-3 §8.02(b)'s enumerated deliverables are exactly what the first period's checklist will demand). Domain authority does not equal visual authority: no boarding portal governs a pixel here. Covenant semantics — what a requirement is, when a period opens, who may certify — come from the loan documents and Terry, never from any referenced product.
+Loan-servicing and financial-close products are consulted for terminology and expected data only: servicer onboarding packets and new-loan boarding checklists (the "loan boarding" notion — lender, loan identifier, UPB, rate structure, maturity, property — is the domain-correct field set for the CSV template, matching the loan master record in 02 §2), and the document-request lists behind agency reporting (evidence: SLOT-3 §8.02(b)'s enumerated deliverables are exactly what the first period's checklist will demand).
+
+The activation moment is also domain-grounded, not a growth trick: borrower reporting already runs on email — servicer questionnaires and requests arrive in inboxes today (evidence: the JLL quarterly Property Questionnaire workflow), so "forward your next lender email here" asks the user to redirect an existing behavior, not adopt a new one. That is why it works as the arc's final ask.
+
+Domain authority does not equal visual authority: no boarding portal or servicer workflow governs a pixel here. Covenant semantics — what a requirement is, when a period opens, who may certify — come from the loan documents and Terry, never from any referenced product.
 
 ## 16. Accessibility, performance, and safety
 
@@ -341,6 +351,7 @@ Loan-servicing and financial-close products are consulted for terminology and ex
 - Certify and external-send safety: structurally out of reach — no certify or send control exists on any onboarding/import/demo screen; signer designation only writes grants that the real gates check later (03 §2).
 - Source immutability: uploaded originals immutable with hashes (artifact law); the CSV source file immutable per batch; repairs are logged deltas, never file edits.
 - Auditability: every batch transition, guide completion, grant, mint, and invite is an ActivityEvent; the undo writes a reversal event naming every reversed loan.
+- Demo safety (D-6): the demo data source is physically separate from tenant data; no anonymous session ever holds a credential capable of reading a real org's rows — asserted at the data-access layer, tested in §17.13.
 
 ## 17. Acceptance tests and fixtures
 
