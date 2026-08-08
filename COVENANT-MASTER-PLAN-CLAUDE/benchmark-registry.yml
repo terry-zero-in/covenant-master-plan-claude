@@ -1,0 +1,278 @@
+# Covenant benchmark registry — machine-readable form of 09-BENCHMARK-SYNTHESIS-REGISTRY.md
+# Schema per the Dynamic Surface Benchmarking Doctrine §9. Registry is seed-not-whitelist.
+# discovered: true marks non-seed candidates found dynamically. role values are the doctrine's limited roles.
+
+selection_policy:
+  registry_is_seed_not_whitelist: true
+  dynamic_discovery_required_for_tier_b_and_c: true
+  fresh_candidates_required_for_tier_b_and_c: 2
+  official_sources_first: true
+  surface_role_assignment_required: true
+  counterexample_required_for_tier_c: true
+  universal_pane_limit_prohibited: true
+  api_model_is_not_ui_ia: true
+  build_before_evidence_gate: prohibited
+
+references:
+  linear:
+    roles: [interaction, ia]
+    use_when: [triage decision grammar, saved views scoping, snooze semantics, palette ranking, settings two-door scoping]
+    official_sources: [https://linear.app/docs/triage, https://linear.app/docs/inbox, https://linear.app/docs/custom-views, https://linear.app/docs/filters]
+    last_verified: 2026-08-08
+  ramp:
+    roles: [workflow-state]
+    use_when: [intake receipt + unprocessable taxonomy, readiness-gated your-move queues, persistent setup guide, advisor seats]
+    official_sources: [https://support.ramp.com/hc/en-us/articles/35659701397395, https://support.ramp.com/hc/en-us/articles/4417421399699]
+    last_verified: 2026-08-08
+  rossum:
+    roles: [ontology, interaction]
+    use_when: [queue lifecycle, automation dial with per-field confidence thresholds, validation screen state machine, keyboard confirm flow]
+    official_sources: [https://knowledge-base.rossum.ai/docs/guide-to-automation-process-in-rossum, https://knowledge-base.rossum.ai/docs/interactive-bounding-boxes-in-rossum]
+    last_verified: 2026-08-08
+  instabase:
+    roles: [evidence-provenance, interaction]
+    use_when: [validation-failure-driven review, draw-a-box re-grounding corrections, auto-revalidation]
+    official_sources: [https://docs.instabase.com/automate/review, https://docs.instabase.com/automate/validating-documents]
+    last_verified: 2026-08-08
+  plain:
+    roles: [ia]
+    use_when: [3-state queues with reason substates, auto-reopen on external activity, correspondence threading]
+    official_sources: [https://help.plain.com/article/statuses]
+    last_verified: 2026-08-08
+  floify:
+    discovered: true
+    roles: [domain-truth]
+    use_when: [per-loan needs list, rejection re-opens with reason, chase cadence pre/post deadline]
+    official_sources: [https://help.floify.com/hc/en-us/articles/360040005171]
+    last_verified: 2026-08-08
+  dext:
+    discovered: true
+    roles: [shell]
+    use_when: [product-exclusive intake addresses, per-sender learned rules]
+    official_sources: [https://help.dext.com/en/articles/416754-submitting-items-with-extract-by-email]
+    last_verified: 2026-08-08
+  ocrolus:
+    discovered: true
+    roles: [workflow-state]
+    use_when: [confidence+quality routing machine-vs-human, cross-source validation]
+    official_sources: [https://www.ocrolus.com/platform/]
+    last_verified: 2026-08-08
+  front:
+    roles: [anti-pattern]
+    use_when: [what the intake must never become - shared-mailbox human-touch-everything]
+    official_sources: [https://help.front.com/en/articles/1999]
+    last_verified: 2026-08-08
+  abbyy:
+    roles: [workflow-state, evidence-provenance]
+    use_when: [recreated-searchable derivative model (text under page image), staged verification escalation, low-confidence marks]
+    official_sources: [https://support.abbyy.com/hc/en-us/articles/19098939370515, https://docs.abbyy.com/vantage/documentation/runtime/manual-review/manual-review]
+    last_verified: 2026-08-08
+  ironclad:
+    roles: [ia, ontology]
+    use_when: [record=document+properties, related-record families, needs-verification saved view]
+    official_sources: [https://support.ironcladapp.com/hc/en-us/articles/12277809086615]
+    last_verified: 2026-08-08
+  box:
+    roles: [interaction]
+    use_when: [version stacks, make-current promotion, tombstoned deletes, metadata beside preview]
+    official_sources: [https://support.box.com/hc/en-us/articles/360043697054]
+    last_verified: 2026-08-08
+  hebbia:
+    roles: [evidence-provenance]
+    use_when: [citation-linked cells, click-through to exact page, citation preview peek]
+    official_sources: [https://www.hebbia.com/product]
+    last_verified: 2026-08-08
+  adobe-acrobat:
+    roles: [evidence-provenance]
+    use_when: [suspect-word contract - original pixels stay, guess never presented as truth]
+    official_sources: [https://helpx.adobe.com/acrobat/desktop/create-documents/scan-documents-to-pdfs/fix-scanned-text.html]
+    last_verified: 2026-08-08
+  docusign:
+    roles: [interaction]
+    use_when: [identity-bound ceremony, two-beat act rhythm, certificate-of-completion audit artifact]
+    official_sources: [https://support.docusign.com/guides/ndse-user-guide-history-coc]
+    last_verified: 2026-08-08
+  docusign-navigator:
+    discovered: true
+    roles: [workflow-state]
+    use_when: [accept-or-edit per AI attribute, accepted-only data enters reporting]
+    official_sources: [https://www.docusign.com/products/platform/navigator]
+    last_verified: 2026-08-08
+  litera-kira:
+    discovered: true
+    roles: [domain-truth]
+    use_when: [extraction-links-to-source defensibility bar, highlight-to-train]
+    official_sources: [https://www.litera.com/products/kira]
+    last_verified: 2026-08-08
+  google-docai-hitl:
+    roles: [anti-pattern]
+    use_when: [review detached from the system of record - deprecated by its own platform]
+    official_sources: [https://docs.cloud.google.com/document-ai/docs/deprecation]
+    last_verified: 2026-08-08
+  vanta:
+    roles: [workflow-state]
+    use_when: [graded urgency orange/red, per-item deadlines, evidence freshness, versioned SLA rules, audit package]
+    official_sources: [https://help.vanta.com/en/articles/11345547, https://help.vanta.com/en/articles/11345374]
+    last_verified: 2026-08-08
+  numeric:
+    discovered: true
+    roles: [workflow-state]
+    use_when: [autosubmit-when-matched, exception-first close, materiality-gated flux narrative]
+    official_sources: [https://www.numeric.io/product/close, https://www.numeric.io/product/reconcile]
+    last_verified: 2026-08-08
+  floqast:
+    roles: [workflow-state]
+    use_when: [strict tie-out mode (void-on-drift signatures), completeness checks, materiality-thresholded sign-off]
+    official_sources: [https://www.floqast.com/blog/strict-tie-out-mode]
+    last_verified: 2026-08-08
+  datasnipper:
+    discovered: true
+    roles: [evidence-provenance]
+    use_when: [one-gesture value+source-region objects, bidirectional cell-region navigation, validation/exception tickmarks, document matching templates]
+    official_sources: [https://knowledge.datasnipper.com/how-to-extract-data-from-a-document, https://knowledge.datasnipper.com/how-to-automate-your-test-with-document-matching]
+    last_verified: 2026-08-08
+  puzzle:
+    roles: [interaction]
+    use_when: [statement-line to ledger drilldown, period x account drill coordinates]
+    official_sources: [https://help.puzzle.io/en/articles/11385709]
+    last_verified: 2026-08-08
+  modern-treasury:
+    roles: [ontology, workflow-state]
+    use_when: [expected-vs-actual enum states incl. provisional, approval chains, review-as-role, append-only ledgers]
+    official_sources: [https://docs.moderntreasury.com/reconciliation/docs/overview, https://docs.moderntreasury.com/payments/docs/approval-rules-overview]
+    last_verified: 2026-08-08
+  sigma:
+    roles: [interaction]
+    use_when: [view-underlying-data at feeding granularity, drill as temporary state]
+    official_sources: [https://help.sigmacomputing.com/docs/drill-into-data]
+    last_verified: 2026-08-08
+  finley:
+    discovered: true
+    roles: [domain-truth]
+    use_when: [agreement decomposed into computed covenants + dated deliverables + gated requests, early-warning framing]
+    official_sources: [https://docs.finleycms.com/core-capabilities/deliverables]
+    last_verified: 2026-08-08
+  setpoint:
+    discovered: true
+    roles: [domain-truth]
+    use_when: [certify-by-recompute, computed-vs-reported diff as blocking artifact]
+    official_sources: [https://www.setpoint.io/calculation-agent/]
+    last_verified: 2026-08-08
+  bankstride-ncino:
+    roles: [anti-pattern]
+    use_when: [covenant-as-tickler (due date + upload chute, no computation) - the model Covenant replaces]
+    official_sources: [https://www.bankstride.com/tickler-tracking-management]
+    last_verified: 2026-08-08
+  github:
+    roles: [workflow-state, ia]
+    use_when: [required checks gating, stale-review dismissal (void-on-change), releases draft-publish-immutable + attestation, invisible admin settings]
+    official_sources: [https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches, https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases]
+    last_verified: 2026-08-08
+  stripe:
+    roles: [ia]
+    use_when: [filter-first chartless registers, object detail + event timeline, requirements-hash onboarding, explicit exports]
+    official_sources: [https://docs.stripe.com/development/dashboard/events, https://docs.stripe.com/stripe-apps/patterns/activation-flow]
+    last_verified: 2026-08-08
+  carta:
+    roles: [workflow-state]
+    use_when: [sign-before-send un-disableable, escalating ceremony reminders, publish/approve separation]
+    official_sources: [https://support.carta.com/kb/guide/en/how-to-sign-company-securities-DUFbF63lNh]
+    last_verified: 2026-08-08
+  mercury:
+    roles: [workflow-state, visual-craft]
+    use_when: [separation-of-duties toggle, threshold approval rules, resumable onboarding, filter-bound header stats]
+    official_sources: [https://support.mercury.com/hc/en-us/articles/28776049990548, https://support.mercury.com/hc/en-us/sections/43281880835860]
+    last_verified: 2026-08-08
+  avalara:
+    discovered: true
+    roles: [domain-truth]
+    use_when: [approve-to-file cadence windows, review-against-artifact; REJECTION ANCHOR - no auto-approval at deadline ever]
+    official_sources: [https://help.avalara.com/Returns/Monthly_filing_timeline_for_Managed_Returns]
+    last_verified: 2026-08-08
+  nng-confirmation:
+    roles: [anti-pattern]
+    use_when: [ceremony budget - typed confirmations only for rare dangerous acts]
+    official_sources: [https://www.nngroup.com/articles/confirmation-dialog/]
+    last_verified: 2026-08-08
+  attio:
+    roles: [ia, ontology]
+    use_when: [object/record/attribute/list/view model, record pages with highlight widgets, shared saved views]
+    official_sources: [https://attio.com/help/reference/attio-101/attios-data-model/define-your-data-model-objects-lists-and-views]
+    last_verified: 2026-08-08
+  karbon:
+    discovered: true
+    roles: [workflow-state]
+    use_when: [recurring work instantiation, dual dates (external deadline vs internal due), time-triggered bucket promotion]
+    official_sources: [https://help.karbonhq.com/en/s/articles/6096234-setup-repeating-work-on-a-schedule]
+    last_verified: 2026-08-08
+  taxdome:
+    discovered: true
+    roles: [interaction]
+    use_when: [due-date-only calendar plotting, calendar as lens over list]
+    official_sources: [https://help.taxdome.com/article/785-workflow-basic-calendar-view]
+    last_verified: 2026-08-08
+  loanboss:
+    discovered: true
+    roles: [domain-truth]
+    use_when: [multifamily critical-date taxonomy incl. notice windows, lender-adjusted metric definitions per loan]
+    official_sources: [https://www.loanboss.com/notifications]
+    last_verified: 2026-08-08
+  google-calendar-month-grid:
+    roles: [anti-pattern]
+    use_when: [month grids hide clustered workload (+N more truncation)]
+    official_sources: [https://support.google.com/calendar/answer/34580]
+    last_verified: 2026-08-08
+  juniper-square:
+    roles: [domain-truth]
+    use_when: [connected real-estate graph relationships - domain research ONLY, never a positioning comparison]
+    official_sources: [https://www.junipersquare.com/platform]
+    last_verified: 2026-08-08
+  inngest:
+    roles: [workflow-state]
+    use_when: [two-pane run anatomy, retry attempt badges]
+    official_sources: [https://www.inngest.com/docs/platform/monitor/inspecting-function-runs]
+    last_verified: 2026-08-08
+  langsmith:
+    roles: [workflow-state]
+    use_when: [corrections anchored to exact step, should-have-been capture]
+    official_sources: [https://docs.langchain.com/langsmith/observability-concepts]
+    last_verified: 2026-08-08
+  temporal:
+    roles: [ontology]
+    use_when: [durable waits on named humans, event-group collapsing over full logs]
+    official_sources: [https://docs.temporal.io/web-ui]
+    last_verified: 2026-08-08
+  trigger-dev:
+    roles: [ia]
+    use_when: [root-runs-only lists with opt-in depth, NL-to-filter chips]
+    official_sources: [https://trigger.dev/docs/runs]
+    last_verified: 2026-08-08
+  raycast:
+    discovered: true
+    roles: [interaction]
+    use_when: [computed results inline in search, parameterized commands]
+    official_sources: [https://manual.raycast.com/search-bar]
+    last_verified: 2026-08-08
+  chatgpt-memory:
+    discovered: true
+    roles: [interaction]
+    use_when: [central inspectable/correctable memory with per-entry controls]
+    official_sources: [https://help.openai.com/en/articles/8590148-memory-faq]
+    last_verified: 2026-08-08
+  digits:
+    discovered: true
+    roles: [workflow-state]
+    use_when: [confidence-gated routing auto-vs-queue, corrections feed forward, queue-not-chatbox agent posture]
+    official_sources: [https://digits.com]
+    last_verified: 2026-08-08
+  hubspot-import:
+    discovered: true
+    roles: [interaction]
+    use_when: [map-columns import with inline validation and in-tool repair]
+    official_sources: [https://knowledge.hubspot.com/import-and-export/understand-the-import-tool]
+    last_verified: 2026-08-08
+  copilot-everywhere:
+    roles: [anti-pattern]
+    use_when: [ambient AI chrome imposed on non-AI tasks - the quiet log is the counter-design]
+    official_sources: []
+    last_verified: 2026-08-08
