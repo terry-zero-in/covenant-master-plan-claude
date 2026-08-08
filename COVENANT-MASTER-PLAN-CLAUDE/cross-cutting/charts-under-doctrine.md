@@ -63,7 +63,7 @@ Per the calendar direction: default stays the task-first agenda; the heat-strip 
 | Animated build-ins/count-ups | Motion that carries no information; charts appear complete (§6) |
 | Charts of unsealed periods | The trend substrate is sealed periods only (05 §5); charting in-flight values would plot numbers still subject to void-on-change |
 
-The default state of any new surface is **chartless**. A chart is added by exception, through the §8 acceptance gate, never by habit.
+The default state of any new surface is **chartless**. A chart is added by exception, through the §11 acceptance gate, never by habit.
 
 ## 4. Mark anatomy
 
@@ -110,13 +110,23 @@ Fewer than 3 sealed periods = no shape = no chart. The slot renders the signed t
 - **The chart never replaces the number.** The readout supplements the adjacent text; nothing is discoverable only by hover (hover-only truth fails keyboard and fails honesty). Everything in the readout exists as text or trace elsewhere on the surface.
 - Readout latency: synchronous from the assembled series (no fetch on hover); document lazy-load on trace follows the provenance skeleton rule (provenance §4).
 
+Readout anatomy (top to bottom, fixed order so the eye learns it once):
+
+1. Period identity (link) — app sans, secondary rung
+2. The figure — Geist Mono `tabular-nums slashed-zero`, primary rung, full precision
+3. Verdict chip + basis badge (test series only) — same components as the table law, not lookalikes
+4. Signed headroom, both denominations (test series only) — mono, explicit signs
+5. Trace affordance ("view source") — the lit-row dispatch
+
+Max width 280px; single column; never wraps a figure; hairline border on the gray ladder with the menu-elevation treatment (readouts float like menus, the one sanctioned elevation, 08 §4).
+
 ## 6. Keyboard and reduced motion
 
 - The chart is one Tab stop. Inside: ←/→ walk marks (readout follows focus — hover parity); Enter opens the focused mark's sealed period; the readout's trace affordance is reachable (↓ into the readout, Enter traces); Esc exits the chart, then the frame's Esc ladder (08). G-chords pass through.
 - Focus ring on the active mark = accent-family treatment, always visible.
 - **Motion law:** charts appear complete — no build-in, draw-on, or count-up animation, ever (motion that carries no information is forbidden at baseline, not just under reduced motion). Residual micro-transitions (readout fade, focus shift ≤150ms) are stripped entirely under `prefers-reduced-motion` or the Settings → Appearance reduced-motion preference (settings direction): state changes become instant, and the lit/selected states are static styles. Nothing in any chart conveys meaning through motion, so reduced-motion loses zero information.
 
-## 6.1 Placement and sizing (pane-model compliance)
+## 7. Placement and sizing (pane-model compliance)
 
 Charts are surface-interior content — they never occupy a work window of their own, never summon the canvas panel, and never justify a split (the pane law's co-visibility test: a chart is co-visible *with* the figures it contextualizes, on the same surface).
 
@@ -130,7 +140,7 @@ Viewport behavior (frame plan 08 §9): at ≥1728px the trends block may render 
 
 Density modes (Settings → Appearance) do not affect charts — mark size and hit targets are accessibility floors, not density preferences.
 
-## 7. The trend assembler wire — the substrate to extend
+## 8. The trend assembler wire — the substrate to extend
 
 `assembleTrendSeries` is **the one existing runtime wire in the UI** (snapshot §3: demo readings through the real trend assembler, on Loans). The plan preserves and extends it rather than building a chart data layer beside it (portfolio-loans direction: "preserve and extend the wire").
 
@@ -157,7 +167,22 @@ type TrendSeries = {
 - **Migration:** step 1, the existing wire's demo readings swap for sealed-period reads (the fixture-to-engine seam, roadmap V-wave; the wire's architecture already proves the path — that is why it is the substrate). Step 2, headroom series derive from TestResult history. Step 3, marks adopt `ProvenanceRef` (provenance adoption item 5). No step forks the assembler.
 - **The renderer never computes.** `TrendChart` receives assembled series and draws them; scale math is layout, not data. Any derived figure a chart wants (deltas, windows) is emitted by the assembler, tested in the library (trust hierarchy: every shipping number is deterministic engine output).
 
-## 8. States
+### 8.1 Component registry entry (one primitive, parts named)
+
+**`TrendChart`** (NEW, `src/components/covenant/charts/TrendChart.tsx`) — parts:
+
+- `Mark` — the dot; wraps the provenance behavior of `<Figure>` (provenance §2.2) so a mark IS a figure: focusable, Enter-activatable, ref-carrying. REUSE the Figure contract, never a parallel one.
+- `SeriesLine` — hairline connector, gray rung, gap-aware (§4.1); renders nothing across unsealed periods.
+- `ThresholdLine` + `WatchBandLine` — labeled hairlines fed by refs to the RequirementRecord (§4.2); render only when the record defines them.
+- `Readout` — the §5 anatomy; positioned by a collision-avoiding placement util shared with the Evidence-panel positioning (08 §6 — Ask never overlays what it cites; the readout inherits the same discipline).
+- `RangePager` — the ≤18-period window control (§2.1); emits window requests to the assembler, never slices locally.
+- `TextDelta` — the sub-3-marks and sub-480px fallback (§4.6, §7); same props as the chart so surfaces swap without branching.
+- `ChartEmptyState` / `ChartBlockedState` — the §9 honest states.
+- **`HeatStrip`** (NEW, `HeatStrip.tsx`, ships only on D-3): `DayPip` (instrument), agenda-scroll dispatcher; reads the due-rule engine's materialized deadlines — never its own date math.
+
+Config-only variation, exactly as the table law: §2.1 and §2.2 are two configs of `TrendChart` (metric series vs threshold-as-zero headroom). A surface needing more files a primitive extension; forked chart code is the same defect as forked grid code, caught by the same CI sweep (§11 test 10).
+
+## 9. States
 
 | State | Behavior |
 |---|---|
@@ -172,7 +197,7 @@ type TrendSeries = {
 | Read-only/sealed | Charts are inherently read-only; traces work forever (seal-not-wipe) |
 | Blocked (occupancy resolver pending, gap 7) | The occupancy series renders the honest block ("occupancy trends unlock with the rent-roll reader"), consistent with the Actuals BLOCKED state — never a fixture curve |
 
-## 9. Benchmark register (limited roles; from the research notes)
+## 10. Benchmark register (limited roles; from the research notes)
 
 | Product | Limited role | Mechanic | Verdict | Source |
 |---|---|---|---|---|
@@ -184,7 +209,7 @@ type TrendSeries = {
 | Google Calendar month grid | Anti-pattern | ~2–3 items per day cell before "+N more"; cell size fixed by month geometry so workload is invisible exactly when heaviest; no urgency dimension | **Reject entirely**; the heat-strip exists to encode the density a month grid hides (R5 research: the documented failure mode) | https://support.google.com/calendar/thread/1706707 (R5 research: Google Calendar) |
 | LoanBoss | Domain forward-projection (boundary case) | Projects next year's DSCR/DY with lender-adjusted math | **Reject for v1 charts**: Covenant charts plot sealed history only (§3, charts of unsealed periods). Forward-looking headroom belongs to the findings service as engine-computed *text* with provenance (agent brief), not as a projected curve that would draw numbers no period sealed | https://www.loanboss.com/blog/automated-lender-adjusted-dscr-dy (R5 research: LoanBoss) |
 
-## 10. Acceptance tests (ticket-ready; fixtures named)
+## 11. Acceptance tests (ticket-ready; fixtures named)
 
 1. **The out-encode gate (rule 2, made procedural):** a chart ships only with a **written out-encode statement** in its PR — what the chart encodes that the adjacent text cannot — reviewed against §2's statements; absence fails review. CI: the Reports surface cannot import from `src/components/covenant/charts/` (lint), keeping Reports chartless by build, not by memory.
 2. **Mark budget (rule 1):** fixture of 24 monthly sealed periods → the window clamps to ≤18 with the range pager; no silent aggregation (assert the rendered series' period_ids are a contiguous window of the input).

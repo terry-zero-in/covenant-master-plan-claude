@@ -165,6 +165,24 @@ yourMove(orgId, scope?: {loanId, period}) → YourMoveItem[]   // every render c
 
 No other surface renders a your-move count. Calendar renders ladder states (it owns Deadline rows); Loan Detail renders "this loan's your-move" via the same query scoped by `loanId`. Every YourMoveItem carries loan+period identity and its deep link — the row IS the navigation (no "go find it" copy anywhere).
 
+### 5.3 The shared item shape (every render consumes this, verbatim)
+
+```ts
+type YourMoveItem = {
+  itemId: string                          // stable across renders (dedup key: class + loanId + period + subjectId)
+  class: 1|2|3|4|5|6|7|8|9                // §5.1 table
+  loanId: string; period?: string         // outward loan name resolves at render; identity chips mandatory
+  subjectRef: ObjectRef                   // the blocking object (period, arrival, proposal, tie-out, finding, draft, deadline)
+  deadline_decoration?: {                 // present when a Deadline row decorates this item (dedup law)
+    lender_deadline: string; rule_text: string; rule_source: ProvenanceRef; ladder_state: 'your-move'|'overdue'
+  }
+  deep_link: string                       // the owning surface route (§5.1)
+  item_state: 'new'|'seen'|'snoozed'      // Inbox-owned rendering state; never affects the count's membership
+}
+```
+
+`item_state` is presentation only — a `seen` item still counts (your-move measures blocked decisions, not attention theater); `snoozed` items leave the renders but remain in the query result with their snooze block visible to Inbox's snoozed segment.
+
 ## 6. Notification channels
 
 - **v1: in-app only.** The system's whole delivery surface is the four renders above plus Calendar's ladder treatments. No email, no browser push, no digest.

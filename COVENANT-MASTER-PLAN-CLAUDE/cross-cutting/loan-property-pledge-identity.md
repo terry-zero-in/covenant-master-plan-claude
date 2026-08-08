@@ -142,7 +142,7 @@ Per the portfolio brief's direction (property cards + pledge roles + supplementa
 
 ## 5. Identity acts — typed decisions, owners, and audit events
 
-Identity is confirmed from documents, not configured (Attio-reject, §10). Every mutation of the graph is a typed act with an owner surface and an append-only audit event; the agent proposes, the human confirms (trust hierarchy). No act below is a modal except where noted — confirmation happens source-beside-decision (05 §4).
+Identity is confirmed from documents, not configured (Attio-reject, §11). Every mutation of the graph is a typed act with an owner surface and an append-only audit event; the agent proposes, the human confirms (trust hierarchy). No act below is a modal except where noted — confirmation happens source-beside-decision (05 §4).
 
 | Act | Actor | Owner surface | Co-visible at the decision | Audit event | Downstream |
 |---|---|---|---|---|---|
@@ -208,7 +208,31 @@ Rules: fixture-era demo strings never gain provenance retroactively — a value 
 | Read-only reviewer | The graph renders fully; every mutation affordance (confirm, amend, end-date) absent, not disabled-mystery |
 | Empty book (new org) | Loans register renders the import CTA (onboarding brief); zero fixture leakage — seeded demo rows exist only in demo orgs |
 
-## 9. Acceptance tests (ticket-ready)
+## 9. Ownership boundaries (what this file does NOT own) and build target
+
+### 9.1 Boundaries — one owner per system, summaries elsewhere (02 §3)
+
+| Adjacent system | Owner | This file's relationship |
+|---|---|---|
+| Role rights, scope enforcement, actor+capacity attribution | `cross-cutting/roles-permissions-tenancy.md` | This file defines the FK chain the scopes resolve against (I-7); the roles file defines who may act inside it |
+| Period lifecycle, void-on-change, seal | `cross-cutting/period-lifecycle-seal.md` | This file supplies the `(loanId, period)` addressing and the effective-dated pledge reads sealed periods depend on |
+| Deadlines, escalation, your-move | `cross-cutting/notifications-deadlines-escalation.md` | Identity chips on its rows render via the accessor; nothing here schedules anything |
+| Document artifacts and versions | `cross-cutting/documents-artifacts-recreated.md` | Documents carry the source regions identity facts cite; identity never re-files documents |
+| Verdict/basis vocabulary | `cross-cutting/status-vocabulary-shortfall-breach.md` | The register's basis-aware verdict chips consume that law; nothing here re-defines it |
+| Provenance chains and the lit-row trace | `cross-cutting/provenance-lit-row-trace.md` | Identity facts are traceable claims; the trace contract is consumed, never re-implemented |
+
+### 9.2 Build target (basis-v2; kit law 12)
+
+| Piece | Landing place |
+|---|---|
+| Identity tables + tenancy FKs (§2) | The F2 migration set alongside the five authored migrations (persistence layer of record; live-application status per snapshot §3 `[UNVERIFIED-BY-SESSION]`) |
+| Read accessor (§4.0) | `src/lib/covenant/identity.ts` (NEW; pure) |
+| `PropertyCard`, `PledgePoolStrip`, `LoanLinkageChip` (§6.2) | `src/components/covenant/identity/` (NEW directory) |
+| Seed script (M2) | `src/lib/covenant/fixtures/seed-book.ts` (NEW; the only remaining consumer of book.ts besides the accessor's adapter) |
+| Surfaces consuming the graph | `/loans`, `/loans/[loanId]` (PROPERTIES tab), portfolio floors, and the `(covenant)` spine routes per 08 §1 — all via the accessor |
+| Tokens | `src/styles/covenant-tokens.css` — consumed, never extended (zero new colors) |
+
+## 10. Acceptance tests (ticket-ready)
 
 1. **Graph shape (fixture: Calloway Park kit).** Seed one org → implicit client → one property (301 units) → one loan (6001.NR + 6220 + 6241, `reporting_only=true`) → one primary pledge. Assert: loan book renders one row; PROPERTIES tab renders one primary card; zero ratio-test rows render; the monitored occupancy threshold renders `basis=monitored` grammar and its verdict domain is pass/watch/shortfall only (evidence: SLOT-3; C-9).
 2. **Dedupe-by-property (fixture: property P in portfolios A and B; loans L1 senior, L2 `supplemental_of=L1`, both pledging P).** Assert: portfolio A's unit total counts P once; a combined A+B view counts P once; the UPB total counts L1+L2; no portfolio-level DSCR renders — per-loan rows render instead, and the header names its grain (§4.2).
@@ -221,7 +245,7 @@ Rules: fixture-era demo strings never gain provenance retroactively — a value 
 9. **Aggregation performance.** The 7-loan seeded book renders `/loans` with pledge-aware columns in one accessor round-trip (no N+1 per row); the pool strip on a 5-property pool fixture renders under uniform row height with no silent compression.
 10. **Reporting-only parity.** Bexley (reporting-only) and Westbrook Flats (covenanted 1.20x DSCR) traverse identical lifecycle structure — same period spine, same gates; only the tests block differs (I-4).
 
-## 10. Benchmarks consumed (limited roles)
+## 11. Benchmarks consumed (limited roles)
 
 - **Attio — object → record → view projection.** One record page per object; every table a projection of the same store. Take: the projection discipline (§4 — surfaces project, never copy). Reject: user-editable schema — Covenant's identity is confirmed from documents, not configured. Official: https://attio.com/help/reference/attio-101/attios-data-model/define-your-data-model-objects-lists-and-views (R5 research).
 - **Juniper Square — one connected graph, every workflow a projection.** Domain lesson only, never a positioning comparison (kit law 1). Take: the single-graph shape mirrored borrower-side. Official: https://www.junipersquare.com/platform (R5 research).

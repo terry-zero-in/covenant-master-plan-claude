@@ -94,7 +94,14 @@ No-double-homing boundary: Actuals owns normalization, mapping memory, reconcili
 - Versions/periods/packages: mappings version by correction (prior value kept, downstream-impact noted — 02 §5); normalized lines carry processing/extractor version; the tie-out target is the prior **sealed** package revision, addressed by hash.
 - Evidence/provenance: every normalized line carries source cell refs (sheet + cell range); every metric carries formula ref + input refs; the full chain shape is 06 §1 and every material figure here opens it in place, beside the claim.
 - Permissions/read-only projections: reviewer role sees everything, confirms nothing (actions disabled with reason); PMC preparers scoped per client (02 §1); sealed periods render this whole surface read-only.
-- Grain: organization → (client) → property (mappings, normalized lines, occupancy) → loan (terms, definitions) → reporting period (this route's address) → document (sources) → requirement (definitions, tests) → metric/test result → package (downstream consumer) → certification/send records (downstream, never here).
+- Field groups and grain:
+  - organization / client — tenancy scope on every read and write (PMC mode: per-client scoping, 02 §1).
+  - property — COA mappings, normalized lines, occupancy aggregates (`propertyId` grain; a multi-property pledge normalizes per property, aggregates per the loan's own definition).
+  - loan — terms, pinned definitions, requirement records (consumed read-only).
+  - reporting period — this route's address `(loanId, period)`; every object here keys to it.
+  - document — source identity + version + artifact class behind every cell ref.
+  - requirement / test / metric — the computed layer (`reqId`, `metricId` grains).
+  - package section / certification record / send record — downstream consumers only; never minted or rendered as owned content here.
 
 ## 5. State machine and exceptions
 
@@ -192,6 +199,7 @@ Absent by design: charts (grids, chips, and signed numbers out-encode any chart 
 - Persistence: persistent, pinned directly under the shell header.
 - Interaction: every chip is an instrument — click filters/scrolls to its owning rows (the chart-doctrine instrument rule applied to chips).
 - Minimum: 56px height, full width; never collapses and never hides a blocked state.
+- The readiness contribution line is computed, never decorative: it renders exactly the readiness reasons this surface owns (open exceptions, broken totals, non-final tie-out), each a link to its row — the same reasons Composer/Certificate display, read from the same engine output (no second computation, no drift).
 - Why this form: status must be readable before any scroll; chips carry state + count + link in one 56px band — a dashboard pane would duplicate what the queue already is.
 
 **Region 1 — Exception queue (primary work)**
@@ -244,6 +252,8 @@ Absent by design: charts (grids, chips, and signed numbers out-encode any chart 
 | Exception queue | Statement grid | NO | — | overlay tab replaces the view | chips link back |
 
 No pane exists merely because information exists: the grids are summonable, the evidence is summonable, and the only persistent split lives inside an expanded exception row for the duration of that decision.
+
+Split-budget accounting (frame law): the tie-out compare is the surface's single use of the second work window; it is summoned by an explicit act (`T` or the compare button) and dismissed by Esc. The Evidence panel occupies the pinned inspector slot and the canvas panel floats — neither counts against the max-2 split, per 08 §4.
 
 ## 10. Layouts and viewport behavior
 
@@ -341,6 +351,10 @@ NEW components (all in `src/components/covenant/actuals/`):
 
 - Typography roles: surface title + group headers in the app sans (13px/600 caps-tracked for group headers); queue rows 13px; metric labels 12px; metric values 20px Geist Mono; test rows 13px with 15px headroom readouts; chip labels 12px.
 - Financial-number treatment: Geist Mono with `tabular-nums slashed-zero` (ruled), right-aligned columns; signed values always carry an explicit `+`/`−` glyph — sign is never conveyed by color alone; no accounting parentheses.
+- Three-actor class grammar at point of use (06 §7, consumed not restyled):
+  - `inferred (proposed)` — confidence + dotted provenance underline, never bold-final;
+  - `inferred (confirmed)` — provenance underline + confirmer stamp on hover;
+  - `certified` — hash chip reference in standard treatment (the paper hexes stay on the Certificate surface); `source` values render document-native inside Evidence/DocView.
 - Spacing rhythm: 8px base grid; 12px row padding; uniform row heights — queue 40px, grid rows 32px, test rows 44px (ruled uniform-row law).
 - Density: a working surface for long sessions — compact by default, no card decoration around tabular content, no empty-space theater.
 - Open ground vs earned boundaries: open, not boxed. Group separation is whitespace plus a hairline only where groups must read apart; the resolver's two cells separate by one hairline, not frames.
@@ -394,7 +408,7 @@ Terminology, expected data, and workflow semantics only:
 
 ## 17. Acceptance tests and fixtures
 
-Fixtures: **CAL-FYE2018** (the Calloway Park evidence spine: SLOT-1 T-12, SLOT-2 roll, SLOT-3 agreement) and **BEXLEY-CANON** (demo book). All tests ticket-ready.
+Fixtures: **CAL-FYE2018** (the Calloway Park evidence spine: SLOT-1 T-12, SLOT-2 roll, SLOT-3 agreement — enters as engine fixture data, never display strings) and **BEXLEY-CANON** (the demo book's ruled canon values, likewise loaded through the engine). Westbrook Flats supplies the covenanted-basis contrast. All tests ticket-ready; each names its fixture.
 
 1. **Control totals tie (CAL-FYE2018).** Given the ingested T-12 with all mappings confirmed — when the pipeline completes — then the Reconciled chip is `done`, the statement grid footer shows Total OpEx **$1,686,050 ✓** and NOI **$1,218,877 ✓** beside the sheet's own totals, and the cross-statement ties render clean (Net Income $460,159; interest $644,017; cash $138,940).
 2. **Exception-first collapse.** Given zero exceptions in the income group — then the group renders exactly one summary row and its full lines appear only in the Region 3 grid. Given an empty queue — then the `AllClearRow` renders and Region 2 promotes to the top.
@@ -431,5 +445,6 @@ Fixtures: **CAL-FYE2018** (the Calloway Park evidence spine: SLOT-1 T-12, SLOT-2
 - Vertical slice (the send-vertical pattern): one route, one loan+period — ingest the CAL-FYE2018 T-12 through the real F-series, render the queue with one seeded unmapped code, confirm it, and watch NOI compute and the control totals tie on screen. Engine data end to end; zero fixture strings.
 - Migration from fixture data: `book.ts` demo values never render here — this surface launches engine-only. Bexley canon values enter as engine fixtures, not display strings, retiring the gap-6 habit for this surface from day one.
 - Rollout/feature flag: `covenant-actuals-surface`; ship behind the flag until fixtures 1–8 and 11 pass; the occupancy block ships in its honest BLOCKED state until F3 lands (launch is never gated on it).
+- Roadmap-wave alignment (05 §6 gap map): the route and the vertical slice ride V-series wiring (gap 5/6 — computed numbers on screens); mapping persistence lands with F2 (gap 3); the occupancy unblock with F3 (gap 7); the lit-row adoption follows the U1-F1 fix (gap 12). Nothing here waits on the agent waves — proposals degrade to "no proposal, manual pick" when the proposer is absent, and the surface stays honest.
 - Proof artifacts required: screen recordings of fixture 3 (exception resolve with lit source), fixture 1 (ties rendering), fixture 6 (shortfall vocabulary), and the blocked occupancy card; a canvas-readback token report proving zero non-ruled values.
 - Final gate: `PASS` when all §17 fixtures pass and the duplication audit confirms no second home for mappings, metrics, or verdicts; otherwise `ADJUST` — no `REBUILD` path exists for an unbuilt surface.

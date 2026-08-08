@@ -81,6 +81,52 @@ Two actors from 02 §4 deliberately have no column. **The lender/servicer is NEV
 - The Team & Roles surface renders the full matrix (members × role × grants × Client scope) as one table — the org chart the audit story depends on, readable at a glance.
 - Escalation targeting follows grants: deadline escalation for "awaiting certification" routes to CERTIFY-grant holders for that Client, not to admins generically (Calendar/escalation machinery, gap 9).
 
+### 3.3 Data shapes (implementation-ready)
+
+```ts
+// src/lib/covenant/tenancy.ts (NEW; pure)
+type Role = 'owner' | 'preparer' | 'reviewer'
+type Grant = 'certify' | 'send'
+
+type Member = {
+  member_id: string; org_id: string
+  role: Role
+  client_scope: string[] | 'org'        // clientIds; 'org' = all clients (PMC org staff/admin)
+  loan_scope?: string[]                  // optional narrowing (reviewer engagements)
+  grants: Grant[]                        // per-engagement grants resolve through EngagementConfig
+  is_org_admin: boolean                  // admin ≠ grants; no bypass (§3)
+  invited_by: string; invite_expires?: string
+}
+
+type EngagementConfig = {                // one per Client (PMC mode); implicit defaults in owner mode
+  client_id: string
+  reserved_grants: { certify: string[]; send: string[] }   // member_ids holding each grant
+  sod: { preparer_neq_certifier: boolean; certifier_neq_sender: boolean }
+  reviewer_visibility: { open_periods: boolean; correspondence: boolean; export: boolean }
+  intake_subaddress?: string
+}
+
+type ActorScope = {                      // resolveActorScope(session) output — the one enforcement input
+  org_id: string; client_ids: string[]
+  role: Role; grants: Grant[]; is_org_admin: boolean
+  sod_policy: EngagementConfig['sod']
+}
+```
+
+### 3.4 Permissions × the period lifecycle
+
+Role rights are further bounded by period state (03 §2) — the state machine outranks the role:
+
+| Period state | Owner / preparer may | No one may |
+|---|---|---|
+| open (holding) | Route arrivals, waive items, confirm schedule/values/mappings | Certify or send (readiness false by construction) |
+| in-review | All confirmations/corrections/dispositions; compose; approve drafts | Certify while readiness is false; the gate lists its reasons |
+| ready | Everything above, plus CERTIFY (grant + SoD permitting) | Send (no certification yet) |
+| certified | SEND (grant permitting); any content change is allowed but **voids** the certification visibly | Silently edit certified content — void-on-change is automatic, never suppressed by any role |
+| packaged/sent (sealed) | Read, trace, export per role; open correspondence about the record | Mutate anything (seal-not-wipe; no role, no grant, no admin flag unseals — corrections are a new revision/period act, never an edit) |
+
+Void-on-change attribution: the void event names the actor whose change triggered it (a human correction) or the engine event (a replaced document's recompute) — voiding is a consequence, not a permission, so no role can be denied it; what roles gate is the *change* itself.
+
 ## 4. Separation of duties (the Mercury option)
 
 Per R4 (Mercury: "the person who initiates a payment can no longer approve it, even if they are listed as an approver," justified explicitly by audit/SOX expectations):
@@ -173,7 +219,26 @@ Per R4 (Modern Treasury: reviewers holding multiple Roles "must pick which Role 
 | Modern Treasury | Capacity-on-record (§9); record shape for future chains (§4) | Reviewers in multiple Roles pick which Role they review as; approval rules stack into sequential chains; append-only records | Adapt: v1 ships one certifier, chain-shaped records; reject auto-send-after-approval — Covenant's send is itself a human gate | docs.moderntreasury.com/payments/docs/approval-reviews · docs.moderntreasury.com/payments/docs/approval-rules-overview |
 | Ramp | Role-scoped expiring invites (§8) | Invites carry role + expiry (default 14 days, admin-adjustable); scoped external-collaborator seats | Adapt: the scoped outside-accountant seat maps to a preparer with narrowed Client scope, never a certifier by default | support.ramp.com/hc/en-us/articles/1500002006322-Getting-started-as-an-Admin |
 
-## 11. States
+## 11. What this contract refuses (v1 non-goals, stated so nobody re-litigates them mid-build)
+
+- **No custom roles.** Three roles + two grants cover the actual actor population (02 §4). A role builder is enterprise theater for a 2–50-loan borrower; the EngagementConfig toggles carry the real variance (who signs, what reviewers see).
+- **No per-object ACLs.** Scope binds at Organization/Client with optional loan narrowing for reviewers — never per-document or per-field grants. Field-level secrecy inside an engagement contradicts the product's own evidence posture (the reviewer's value *is* the traceable record).
+- **No lender seats, no lender-visible UI state** (02 §4 — audience, not user). The only lender-facing artifacts are the sent bytes and, later, optional delivery receipts on the SendRecord (R4, Carta's acceptance adapted — a receipt, never a blocking gate).
+- **No service accounts or API keys that can reach typed acts.** Machine access, when it comes, stops at reads and proposals — the gates stay human (locked law).
+- **No permission inheritance from any other product's accounts.** A Covenant org's members are Covenant members; the boundary law needs no cross-product identity to enforce.
+
+## 12. Walkthrough — a PMC's second client (the flow that proves the model)
+
+1. PMC org admin opens Settings → Organization → Clients → "Add client" (§2.1); Client 2 exists with its own sub-address (§7).
+2. Admin assigns preparer P to Client 2 (`client_scope` grows), designates the client's owner seat O with the CERTIFY + SEND grants reserved to them (EngagementConfig), and accepts the recommended SoD ON (§4).
+3. P's registers now show a client switcher (first moment any Client chrome appears for P); P's palette resolves Client 2 objects; Client 1's book is unchanged and invisible to O.
+4. Documents arrive on Client 2's sub-address; unknown senders quarantine to P's intake queue (§7); P prepares the first period end to end.
+5. At readiness, P's certificate surface reads "awaiting certification by {O}" (§5); O's Home your-move shows the certify-ready period; O certifies (capacity: engagement certifier — stamped silently, §9) and sends.
+6. Reports shows the sealed row; a reviewer engaged on Client 2 sees exactly that row and its record (§6) — and nothing of Client 1, ever.
+
+Every step above is an acceptance-test seed (§15); none of it requires a role builder, an ACL editor, or an admin bypass.
+
+## 13. States
 
 | State | Behavior |
 |---|---|
@@ -187,7 +252,7 @@ Per R4 (Modern Treasury: reviewers holding multiple Roles "must pick which Role 
 | Revoked mid-session | Next server check fails closed; the actor sees the permission-denied state, not a stale success |
 | SoD enabled in a solo org | Honest warning at enablement; certify gate blocks with the named rule until a second granted member exists |
 
-## 12. Build target (basis-v2)
+## 14. Build target (basis-v2)
 
 - `src/lib/covenant/tenancy.ts` — NEW: `resolveActorScope`, `withScope`, grant + SoD evaluation, EngagementConfig reads (pure, test-covered).
 - Migrations: `client_id` FKs down the hierarchy + `members/roles/grants` + `engagement_config` tables (the gap-3 migration workstream; the two unconfirmed live migrations must be verified first — snapshot §7.5).
@@ -197,7 +262,7 @@ Per R4 (Modern Treasury: reviewers holding multiple Roles "must pick which Role 
 - Rail/palette: navigation and verb lists build from the actor's visible set (`CommandPalette` change; shared with `cross-cutting/search-command-keyboard.md`).
 - Quarantine lane: intake pipeline work (gap 1) consumes the recognition list from the same store.
 
-## 13. Acceptance tests
+## 15. Acceptance tests
 
 Fixtures: **TWO-ORG** (Org A: the Bexley canon book · Org B: Westbrook Flats); **PMC** (one PMC org — Client 1: the Calloway Park evidence spine · Client 2: a second fixture client); members covering every role × grant combination; the Calloway Park FYE-2018 period for act-level tests.
 

@@ -63,6 +63,15 @@
 - **Evidence/provenance:** every material figure carries a `ProvenanceRef` and renders through `<Figure>`; `traceToEvidence(ref)` is the only resolver (`cross-cutting/provenance-lit-row-trace.md` §2 — the U1-F1 fix).
 - **Permissions/read-only projections:** reviewer role sees everything, dispositions nothing; PMC preparer dispositions within client scope (certify may be reserved to the owner — role-configurable, 02 §4); sealed periods render read-only for everyone (seal-not-wipe).
 
+**Three-actor grammar at the point of use in this room (06 §7):**
+
+| Class | On the canvas | On trace |
+|---|---|---|
+| source | never on the canvas — Evidence panel only, document-native | opens Original bytes; hash visible |
+| inferred (proposed) | dotted provenance underline + confidence; never bold-final | lights source region; confirm/correct routes upstream |
+| inferred (confirmed) | provenance underline; confirmer stamp on hover | lights source region; correction history in the chain |
+| certified | only in compare (prior package) and sealed renders | opens the certification record + full chain |
+
 **Field groups and grain:**
 
 | Group | Grain | Rendered where |
@@ -184,6 +193,8 @@ Scan order, top-left to bottom-right:
 6. **Actions:** the inline disposition bar on the focused stop; correct-at-source routing; compare summon on changed-field stops.
 7. **Activity/history:** collapsed history foot on the outline — this period's review acts (quiet-log projection), prior revs, void events.
 
+**Zero-exception variant:** the hierarchy compresses — the SummaryStop renders where the walk would begin, the section list stands ready below it, and the readiness strip's enabled CTA becomes the second thing the eye lands on. The room still shows the whole package for browsing; it just asks nothing.
+
 **Absent by design:** charts (nothing here out-encodes text — chart doctrine); any editing affordance on package content; generic chat chrome (Ask is highlight-to-ask + the canvas panel only); "mark all reviewed" bulk acts; unread badges (C-8); confirmation dialogs (NN/g ceremony budget — the two heavy ceremonies live on Certificate and Send).
 
 ## 8. Page anatomy and regions
@@ -242,6 +253,8 @@ The ruled 3-column reconcile interior (KEPT — snapshot §5; frame-mirror spec 
 | Verdict chip + headroom | Requirement definition text (verbatim, with source region) | on demand | "is this tested per the loan's own definition?" | Evidence chain breadcrumb (definition link) | — |
 | Readiness reasons | Blocking items | no | navigate to fix | links from the strip | — |
 | Draft narrative | The evidence it cites | YES at approval stop | approve/edit | narrative anchor + Evidence lit on cited figures | — |
+| Deadline chip | Escalation state | no | urgency awareness only | header chip; Calendar owns the ladder | — |
+| Ask panel | The lit region a question concerns | YES when asking about evidence | grounded question | canvas panel positioned away from the light (08 §6) | panel is movable |
 | Review Room | Composer editing | NO — never simultaneous | — | correct routes away with return path | — |
 
 No pane exists merely because information exists: watch verdicts, under-band changes, and clean confirmed figures get no dedicated region — chips and collapsed lists only.
@@ -412,12 +425,26 @@ Terminology, expected data, and workflow semantics only: **Finley** (docs.finley
 13. **T13 — Accessibility.** Axe-clean; the trace announces and moves focus per §16; verdict chips pass color-independence; reduced-motion swaps animation for instant positioning with the persistent highlight intact.
 14. **T14 — Sealed read-only.** Open FIX-BEX-Q2 sealed via Reports → full render, sealed banner explaining inspectability, dispositions disabled with reason, every trace still resolves (seal-not-wipe).
 15. **T15 — Benchmark challenger review.** A reviewer walks GitHub PR review, DataSnipper validation, and Numeric's exception view against this build and files any mechanic where the benchmark's version is stronger; ADJUST items ticketed before the gate below closes.
+16. **T16 — Exception-first law.** On FIX-CAL-FYE18 with all confirmations current and all tie-outs clean, assert the stop count is exactly the exception count: every confirmed clean figure (all ~150 T-12-derived lines) generates zero stops and zero outline rows outside the section list.
+17. **T17 — Trace latency.** With the T-12 evidence document open, trace-to-light completes under 200ms for any of its rows (contract §6.6); with the document cold, the target region renders skeleton-marked while pages load.
+18. **T18 — Your-move consistency.** The open-stop count for FIX-BEX-Q2 rendered on Home, Inbox, and this room's progress header is one computed query returning one number (03 §4; frame test 6) — disposition here decrements all three without refresh skew.
+19. **T19 — PMC role scope.** As a PMC preparer scoped to another client: honest 404/403 page. Scoped correctly: dispositions permitted, and where the engagement reserves certify to the owner, the CTA renders "ready — awaiting {owner} to certify" instead of enabling (02 §4).
+20. **T20 — Disposition-binding integrity.** Accept a changed-field stop, then bump the package rev without touching that field → the disposition persists with a "carried" stamp; then change the field's value → the stop reopens citing the value-state mismatch, and the original act remains in history (data-integrity fixture on `subject_value_state`).
 
 ## 18. Build plan
 
 - **Dependencies (named):** provenance contract adoption item 1 — the U1-F1 fix is this surface's first PR (`cross-cutting/provenance-lit-row-trace.md` §3); F2 persistence (periods, packages, act records — dispositions need real rows; tenancy scoping for the 404/403 honesty); the orchestration seam V1 ("first computed period on Review" — 05 §6, gap 6); the findings service (agent brief) for class-1 stops; the tie-out engine (built, green — needs wiring); variance-band policy config (Settings → Data).
 - **Foundation work:** the deep route `/covenant/[loanId]/[period]/review` with resolver + honest 404/403 (clone the certificate-route pattern); `stops.ts` (pure, test-first — the §5.1 ordering table is the spec); `dispositions.ts` append-only act records with value-state binding.
 - **Components to build first:** `<Figure>` + `traceToEvidence` (everything hangs on them) → `ReviewOutline` + `StopCard`/`DispositionBar` → `ReadinessStrip` → `SummaryStop`/`VoidStop` → `PeerCompare` last (it depends on sealed prior packages existing in persistence).
+- **PR-sized work packages, in order:**
+  1. `traceToEvidence` + `<Figure>` + the three-renderer re-point (the U1-F1 fix; FIX-SHUFFLE tests in the same PR — contract §3 item 1).
+  2. Deep route + resolver + 404/403 + breadcrumb switchers (T12 partial, T19).
+  3. `stops.ts` + `ReviewOutline` over engine-derived stops (T1, T16).
+  4. `StopCard`/`DispositionBar` + `dispositions.ts` (T4, T6, T20).
+  5. `ReadinessStrip` wired to engine readiness (T5, T11); `SummaryStop` (T2).
+  6. Tie-out wiring + FIX-CAL-FYE18 seeded prior package (T5, T17).
+  7. `PeerCompare` + viewport collapse rules (T7, T12).
+  8. `VoidStop` + void-return flow (T8, T9); sealed read-only mode (T14).
 - **Vertical slice (the send-vertical pattern):** one route, one loan+period — Bexley Q2 from engine data end to end: computed verdicts, a real tie-out against a seeded prior package, derived stops, persisted dispositions, computed readiness enabling the real certificate route. This slice is the product's center of gravity — the first time the ~60-second review runs on real computation instead of demo strings.
 - **Migration from fixture data:** `book.ts` figures migrate to engine reads behind the `<Figure>` wrapper; unmigrated values render the "no source" affordance and count toward the CI fixture-burndown (contract §5) — the room never fakes provenance during the transition.
 - **Rollout/feature flag:** `covenant-review-stops` gates the stop walk over the existing spread; the U1-F1 resolver fix ships ungated (it is a defect repair, not a feature); compare and the void-return flow follow in a second flag stage.

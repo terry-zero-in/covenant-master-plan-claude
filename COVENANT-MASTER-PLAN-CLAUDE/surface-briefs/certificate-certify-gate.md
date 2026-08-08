@@ -217,7 +217,10 @@ Absent by design: charts of any kind; activity feeds; commentary editing; any se
 **Region D — the certify modal (transient; the one legal-weight modal).**
 
 - Purpose: the typed act. Modals are permitted only for typed acts with legal weight and destructive confirms (08 §4) — this is the canonical case.
-- Content, two beats (R4: DocuSign's two-beat rhythm adapted): **Beat 1 — review**: loan, period, package rev, content hash (short + full on expand), section manifest count, verdict summary, certifier identity + capacity (role), preparer identity where preparer ≠ certifier (both recorded distinctly — R4: Mercury separation-of-duties). **Beat 2 — attestation**: type your full name exactly as your identity records it; mismatch keeps the act disarmed with the mismatch stated in words; match arms the Certify button (#33419D).
+- Content, two beats (R4: DocuSign's two-beat rhythm adapted):
+  - **Beat 1 — review**: loan, period, package rev, content hash (short + full on expand), section manifest count, verdict summary, certifier identity + capacity (role), preparer identity where preparer ≠ certifier (both recorded distinctly — R4: Mercury separation-of-duties).
+  - **Beat 2 — attestation**: type your full name exactly as your identity records it; a mismatch keeps the act disarmed with the mismatch stated in words; a match arms the Certify button (#33419D).
+  - The two beats are sequential, not tabs: Beat 2 unlocks only after Beat 1 has rendered completely (no skipping past the content summary).
 - Persistence: transient; Esc cancels with nothing written.
 - Minimum width: 560px; centered; at ≥1728px offset left so the rail's readiness proof stays visible.
 - Why a modal: the act must interrupt; everything it needs is restated inside it so no co-visibility is required.
@@ -272,12 +275,29 @@ No pane exists merely because information exists: the rail carries only sign-dec
   - CertifyControlZone: the Certify button + adjacent reasons list when blocked (disabled-with-linked-reasons; never bare).
   - Sheet footer: rev, generated timestamp.
 - **Figure (provenance wrapper)** — REUSE (cross-cutting §2.2). The certificate is adoption item #2; every sheet numeral wraps; ref-less figures render the "no source" affordance and count toward the fixture burndown (cross-cutting §5).
-- **HashChip** — NEW. Short hash in Geist Mono + copy affordance + expand-to-full; struck state when voided; reused by `send-record.md` for the equality display.
-- **ReadinessProofList** — NEW. Rows: reason text · state dot · linked blocker; consumes the same engine readiness Composer's rail consumes (one computation, two renders); CountBadge REUSE for counts.
-- **WhatChangedCard** — NEW. Engine diff rows vs prior period (field, prior → current, cause link); row click traces into the sheet; "open compare in Review" link.
-- **CertificationHistoryList** — NEW. Record cards (who/capacity/when/short-hash) and void cards (when, what changed, by whom/what, the typed reason) interleaved newest-first; append-only render; empty state "no certifications yet".
-- **CertifyModal** — NEW. Beat-1 summary block · identity + capacity line · preparer line where distinct · Beat-2 typed-name field with live match state · armed Certify button (#33419D / #5265C5 / #121459) · cancel. No keyboard shortcut arms or fires the act.
-- **VoidBanner** — NEW. Above-sheet banner: "Certification voided {when}" · change list (each row traces) · actor/agent of the change · the typed reason · CTA "Return to review" (the void renders as Review stop #1). Not dismissible while unresolved.
+- **HashChip** — NEW. Parts:
+  - Short hash (first 8) in Geist Mono; copy affordance; expand-to-full popover.
+  - Struck state when voided; sealed state adds the seal mark.
+  - Reused by `send-record.md` for the approved-bytes equality display (one component, two surfaces).
+- **ReadinessProofList** — NEW. Parts:
+  - Row anatomy: reason text · state dot · linked blocker; uniform row heights, open-not-boxed.
+  - Consumes the same engine readiness Composer's rail consumes (one computation, two renders).
+  - Header count ("{n} of {m} requirements met") via CountBadge REUSE.
+- **WhatChangedCard** — NEW. Parts:
+  - Engine diff rows vs prior period: field · prior → current · cause link.
+  - Row click traces into the sheet (lights the figure); "open compare in Review" link for the 50/50 view.
+  - Zero-delta state: "nothing changed beyond expected" — one summary row, not an empty box.
+- **CertificationHistoryList** — NEW. Parts:
+  - Record cards (who / capacity / when / short-hash) and void cards (when · what changed · by whom/what · the typed reason) interleaved newest-first.
+  - Append-only render; cards expand in place; empty state "no certifications yet".
+- **CertifyModal** — NEW. Parts:
+  - Beat-1 summary block; identity + capacity line; preparer line where distinct.
+  - Beat-2 typed-name field with live match state; armed Certify button (#33419D / #5265C5 / #121459); cancel.
+  - No keyboard shortcut arms or fires the act; the button holds pressed (#121459) during the write.
+- **VoidBanner** — NEW. Parts:
+  - Headline "Certification voided {when}"; change list (each row traces); actor/agent of the change; the typed reason.
+  - CTA "Return to review" (the void renders as Review stop #1).
+  - Not dismissible while the void is unresolved.
 - **CertificationRecordArtifact** — NEW. The generated human-readable certificate (R4: DocuSign Certificate of Completion × GitHub release attestation): who, capacity, when, session identity, full content hash, section manifest, verdict summary; renders in-app; exports with the package (PDF export = F4).
 - **Evidence overlay** — REUSE (Evidence panel + `traceToEvidence`). Placement per Region C; lit-row band uses `--accT` per the cross-cutting contract.
 - **SendPanel** — REUSE by mount; owned and specified by `send-record.md`; mounts in the rail post-certify.
@@ -332,6 +352,8 @@ No pane exists merely because information exists: the rail carries only sign-dec
 - Dividers/elevation: the sheet floats on the frame with one soft elevation step; hairlines carry all interior structure; the overlay carries the frame's standard elevation, held apart by hairline + shadow.
 - Semantic color: frame semantics (focus ring, lit-row band `--accT`, your-move counts) stay in the periwinkle accent family and gray ladder; the paper hexes and the accent family never trade roles.
 - Focus/selected/hover states: frame focus ring even on paper (focus is a frame behavior); figure hover = provenance underline strengthens; lit state per the cross-cutting contract.
+- The certified sheet's ruled paper treatment beyond this surface: Reports re-renders the same CertifiedSheet component read-only inside sealed records — same paint map, sealed banner added; no second implementation of the paper exists anywhere.
+- Chart style: not applicable — no charts ship on this surface (stated above; the doctrine's out-encode test can never pass against the sheet itself).
 - Motion: overlay slides 200ms ease-out; the certified-state transition (hash chip appears, statement ink turns #33419D) is one 300ms settle — a single quiet moment, no celebration. `prefers-reduced-motion`: all transitions become instant state swaps.
 - Long-session ergonomics: not the design driver here — the surface is built for short, deliberate visits; nothing blinks, polls, or nags on the sheet.
 
@@ -362,7 +384,12 @@ Terminology and expected-content references only: the servicer certification blo
 - Table virtualization/large data: sheet sections are bounded summaries; no virtualization by design — the full statement grid lives on Actuals.
 - Loading and latency feedback: paper ground paints immediately; figures skeleton; the act's write round-trip holds the pressed state (#121459) with a working note and never double-fires (idempotent client guard + server-side single-record constraint).
 - Destructive action confirmation: certify is legal-weight, not destructive — the typed act is its own confirmation; no second dialog ever stacks on it (NN/g budget).
-- Certify safety: typed identity-bound act; hash pinned at act time against the rendered rev — a rev change between render and act aborts with a fresh-content notice (never certifies unseen bytes); void-on-change engine-enforced; no API path certifies without an authenticated human session (R4 synthesis 12); no role bypass exists.
+- Certify safety (the template's typed-acts/approved-bytes/void-on-change triad, applied):
+  - Typed identity-bound act; capacity recorded on the record.
+  - Hash pinned at act time against the rendered rev — a rev change between render and act aborts with a fresh-content notice; the gate never certifies unseen bytes.
+  - Void-on-change engine-enforced; the void reason is mandatory and permanent.
+  - No API path certifies without an authenticated human session (R4 synthesis 12); no role bypass exists, admins included.
+- External-send safety: deferred entirely to the second gate (`send-record.md`); this surface only hands over a valid, un-voided certification.
 - Source immutability: the sheet renders from engine reads; originals immutable (document-artifact law); the certification record append-only.
 - Auditability: CertificationRecord + void events + ActivityEvents reconstruct the full story of every period forever (seal-not-wipe); the CertificationRecordArtifact makes the record lender-legible.
 
@@ -386,11 +413,21 @@ Fixtures: `FIX-CAL-2018` — Calloway Park FYE-2018 evidence spine (annual packa
    - Assert the void card persists in history forever and the send panel retracts.
 5. No silent re-certify: after a void, assert no path re-certifies without the full ceremony on the new rev (fresh hash, fresh typed act); the prior record and void remain in history.
 6. Hash race: mutate the package rev between sheet render and modal fire; assert the act aborts with a fresh-content notice and writes nothing.
-7. Lit-row provenance: click the sheet's NOI figure (`FIX-CAL-2018`); the Evidence overlay opens from the right, the T-12 source row lights and stays lit, and the clicked figure remains fully visible (≥24px clearance); the shuffled-fixture invariant (cross-cutting §2.4) passes on the certificate renderer.
+7. Lit-row provenance (`FIX-CAL-2018`):
+   - Click the sheet's NOI figure ($1,218,877): the Evidence overlay opens from the right, the T-12 source row lights and stays lit.
+   - The clicked figure remains fully visible (≥24px clearance from the overlay edge).
+   - The shuffled-fixture invariant (cross-cutting §2.4) passes on the certificate renderer.
+   - The full chain walks: certified figure → formula → normalized lines → T-12 sheet cells → original bytes (06 chain A).
 8. Vocabulary law: the `FIX-BEX-Q` sheet renders "shortfall" for the monitored occupancy miss; assert the string "breach" appears nowhere on any monitored-basis line.
 9. Permission fixtures: PMC-preparer-without-rights sees "certification reserved to {role}" (no disabled button); reviewer sees read-only; a sealed period renders the sealed banner with every trace still working.
-10. Viewport fixtures: 1440 / 1728 / 2048 render the §10 topologies (assert pane widths); at 1279px the rail becomes labeled tabs and the ceremony becomes a full-viewport takeover with identical beats; at 1151×719 the ceremony refuses with the frame's larger-window state.
-11. Paint audit (closing the phase-3 negative): canvas-readback asserts every §13 paint-map cell — sheet ground #E7EBF8, band + section heads #DDE4FB, hairlines #B3BCDA, statement sentences + control #33419D, hover #5265C5, pressed #121459 — and asserts zero other consumers of these hexes on the surface and zero non-ruled colors on the sheet.
+10. Viewport fixtures:
+    - 1440 / 1728 / 2048 render the §10 topologies (assert pane widths in px).
+    - At 1279px: the rail becomes labeled tabs; the ceremony becomes a full-viewport takeover with identical beats.
+    - At 1151×719: the ceremony refuses with the frame's larger-window state; no silent compression anywhere.
+11. Paint audit (closing the phase-3 negative), by canvas readback, never eyeball:
+    - Sheet ground #E7EBF8; key-figure band + section heads #DDE4FB; hairlines #B3BCDA.
+    - Statement sentences + Certify control #33419D; hover #5265C5; pressed #121459.
+    - Zero other consumers of these hexes on the surface; zero non-ruled colors anywhere on the sheet.
 12. Dark-frame fixture: with the frame in dark theme, the sheet renders the light paper treatment unchanged (light document surface always).
 13. Keyboard fixture: certify end-to-end pointer-free (`G F` → Tab traversal → modal → typed act → certified render); trace-and-return per cross-cutting acceptance test 4.
 14. Data integrity: the stored hash equals an independent recomputation over the rev's bytes; the record is append-only (an update attempt fails at the store layer).
@@ -404,6 +441,12 @@ Fixtures: `FIX-CAL-2018` — Calloway Park FYE-2018 evidence spine (annual packa
 - Components to build first: CertifiedSheet (paint map + Figure wrapping) → ReadinessProofList → CertifyModal + CertificationRecord write → VoidBanner + void engine hook → CertificationHistoryList → CertificationRecordArtifact.
 - Vertical slice (the send-vertical pattern): one route, one loan+period (`FIX-CAL-2018` shape on real persistence), engine data end to end — render the sheet from engine reads, certify against a real record write, void by a real upstream change. The route already exists with resolver + tests; this widens the proven vertical one gate leftward.
 - Migration from fixture data: sheet figures move from `book.ts` strings to engine reads behind the Figure contract; CI counts ref-less figures toward the fixture burndown (cross-cutting §5).
-- Rollout/feature flag: `covenant.certificate.ceremony` gates the modal + record write; the painted sheet ships first (visual-only, zero risk), the ceremony second, the void machinery third.
-- Proof artifacts required: the canvas-readback paint audit (test 11); the certified → void → re-certify event trail on a seeded period; a screenshot set at all four viewports against `paper-accent-periwinkle-render.png`'s stated fidelity target (snapshot §4).
+- Rollout/feature flag: `covenant.certificate.ceremony` gates the modal + record write. Order:
+  1. The painted sheet ships first (visual-only, zero behavioral risk — closes the phase-3 negative).
+  2. The ceremony + record write second (behind the flag).
+  3. The void machinery third (requires the upstream change-event plumbing).
+- Proof artifacts required:
+  - The canvas-readback paint audit (test 11) attached to the PR.
+  - The certified → void → re-certify event trail on a seeded period (screencast or event dump).
+  - A screenshot set at all four viewports against `paper-accent-periwinkle-render.png`'s stated fidelity target (snapshot §4).
 - Final gate: `ADJUST` confirmed — route and chassis stand; ship = paint + ceremony + record + void, with tests 1–16 green.

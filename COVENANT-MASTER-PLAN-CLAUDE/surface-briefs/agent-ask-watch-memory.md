@@ -219,7 +219,7 @@ Per host surface (this layer rides inside others):
 - Why canvas panel: Ask is transient assistance beside any surface; a pane would claim permanent real estate the anti-chrome law forbids; a modal would destroy the context the question is about.
 
 **Finding card (in-flow region on Home §3 / Loan Detail; not a pane):**
-- Anatomy: verdict chip (pass/watch/shortfall/breach per basis) + trigger title; consequence sentence with mono interpolated figures; evidence ref row; "View drafted narrative" (opens split window 2: draft beside the finding — the one agent use of the split, justified by draft-beside-evidence co-visibility); disposition button row; timestamp + "evaluated against computation v{n}".
+- Anatomy: verdict chip (pass/watch/shortfall/breach per basis) + trigger title; consequence sentence with mono interpolated figures; evidence ref row; "View drafted narrative" (opens split window 2: draft beside the finding — the agent layer's single use of the split, justified by draft-beside-evidence co-visibility); disposition button row; timestamp + "evaluated against computation v{n}".
 - Min width 560px as a card; stacks single-column below 1280px.
 
 **Memory inspector (a Settings section, standard settings page anatomy):**

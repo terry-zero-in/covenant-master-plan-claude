@@ -37,7 +37,7 @@
 - What the user should NOT have to decide here: no dispositions (Review Room owns them), no confirmations (Extraction & Confirmation owns them), no certify/send (gates own them), no period-status mutation (the orchestration spine owns transitions — 02 §3). This surface reads and routes.
 - Entry paths: rail `Loans` (`G L`), Home your-move item → loan context, palette object result ("Bexley"), Calendar deadline → period → loan crumb, Reports row → loan link, trend mark or finding elsewhere citing a loan.
 - Exit paths: register row → record; record period row → `/covenant/[loanId]/[period]/{review|composer|certificate|actuals}`; schedule row → `/loans/[loanId]/setup` (amend); document row → `/documents/[docId]`; correspondence summary → `/loans/[loanId]/correspondence`; any figure → Evidence (lit-row) → DocView.
-- Completion/advancement: none — this floor never advances a period; it exposes the period's own advancement state and links to the surface that can.
+- Completion/advancement conditions: none owned — this floor never advances a period; it exposes the period's own advancement state (chips reading the spine's ledger) and links to the surface that can. The two acts that do complete here are personal: a saved view exists and is shared; a loan is activated (pipeline → live), which lets the engine begin scheduling its cadence occurrences (03 §5).
 
 ## 3. Object and ownership model
 
@@ -76,7 +76,7 @@ No-double-homing boundary, stated:
   - trend series assembled by `assembleTrendSeries` from sealed-period engine outputs (05 §5: series points link to their sealed periods);
   - register aggregates under the property-dedupe rule;
   - the computed your-move count scoped to loan/register (03 §4).
-- Agent proposals/drafts: findings with drafted mitigant narratives (summarized here, dispositioned elsewhere); chase status echoes on awaiting-documents periods.
+- Agent proposals/drafts: findings with drafted mitigant narratives (summarized here, dispositioned elsewhere); chase status echoes on awaiting-documents periods; remembered answers rendered beside the fields they fill ("learned {date} from {who}" — inspect/correct inline, one store, 03 §3). Drafted narratives interpolate engine values by reference, never by generation (04 §2.1) — even in summary form here.
 - Human decisions captured here: star, saved-view create/edit/share, tab/view preferences. Nothing else — all typed acts route out.
 - Certified values: never minted here; certified/sent chips render CertificationRecord/SendRecord state with hash chips linking to the sealed record.
 - Versions/periods/packages: PERIODS tab renders the full per-loan set of ReportingPeriods; a period row expands to its append-only event history (R5 research: Stripe — state derived from events, never overwritten).
@@ -154,7 +154,7 @@ Register (`/loans`), scan order:
 5. Evidence: none resident — provenance opens from the record;
 6. Actions: row-level (open, star), header (new loan → import/setup, save view);
 7. Activity: none — the register is stateless inventory.
-Absent by design: charts (verdict chips + deadline column out-encode any chart at this grain — chart doctrine gate failed deliberately); unread badges (C-8: unread is not a concept); any period-mutation affordance.
+Absent by design: charts (verdict chips + deadline column out-encode any chart at this grain — the chart-doctrine ship gate failed deliberately); unread badges (C-8: unread is not a concept); any period-mutation affordance; inline cell editing (Attio's spreadsheet-style grid editing is rejected — loan facts are confirmed in setup flows with provenance, never typed into a grid cell).
 
 Record (`/loans/[loanId]`), scan order:
 1. Header: outward name crumb (book altitude: `Covenant / Loans / Bexley` — no period crumb; the record is loan-altitude, 08 §2), lifecycle stage, star;
@@ -182,6 +182,7 @@ Absent by design: certify/send controls (gates live on the spine); requirement e
   - content: columns in order — Loan (outward name) · Property/ies (pledge-aware: primary property + "+n pool" overflow chip) · Lender/Servicer · Program+Form ("Fannie 6001.NR + 6220/6241", evidence-shaped) · UPB · Rate · Maturity · Period status chip · Next deadline · Verdict chips (basis-aware) · ★;
   - persistence: persistent, fills remaining height; uniform row height 44px, open-not-boxed (ABSOLUTE LAW 11);
   - interaction: row click/Enter → record; chip clicks deep-link (period chip → that period's spine surface, verdict chip → record with covenant strip anchored); column sort; header row sticky;
+  - default sort: next deadline ascending, worst verdict as secondary — urgency reads top-down before any filter is touched (R5 research: Vanta's deadline-in-the-row register); saved views may override;
   - min width 1240px for the full column set; resize: columns collapse per §10 priority into a labeled second row line — never silent truncation of figures;
   - why a single table pane: the decision made here (which loan next) is a scan decision — co-visibility is row-internal.
 - **Aggregate strip**
@@ -296,6 +297,11 @@ Default pane topology and ratios:
   - relation rows, not a freeform canvas: "secures this loan (primary)"; cross-collateral note when a property also secures another loan ("also secures {loan} — supplemental", the Loan↔Loan `supplemental_of` relation, 02 §1);
   - supplemental banner on supplemental loans: "This is a supplemental loan of {senior loan} — separate reporting obligations, shared collateral";
   - footer: the aggregation law stated in words — "Portfolio totals count each property once" (02 §1).
+- **LoanRecordHeader + HighlightWidgetRow** — NEW composition over existing shell header patterns. Parts:
+  - identity block (outward name, lender/servicer subline, lifecycle stage chip, star toggle);
+  - supplemental linkage chip (renders only when `supplemental_of` or an inverse relation exists);
+  - widget row: six fixed widgets (label 11px rung-7 · value in mono · optional chip), each keyboard-focusable, each an anchor or route;
+  - period/deadline widgets re-read the spine and deadline stores on focus (recompute-on-view — never a cached stale chip).
 - **SavedViewSwitcher / filter chips** — REUSE the shared saved-view mechanism (02 §2: one mechanism app-wide). Parts: view menu (personal → workspace scoping, star-to-rail, reorder — top view is the landing default), dirty-state bar ("Update view / Save as new"), URL-share action (R5 research: Linear/Attio); filter chips are structured (entity pickers), not free text.
 - **ProvenanceChip** — NEW shared atom (also consumed by Review/Certificate renderers): dotted-underline affordance on the figure + a chip glyph; states: proposed (confidence shown) / confirmed (confirmer on hover) / stale / conflict; click contract: open Evidence beside, light the exact source line, keep it lit (the cross-cutting lit-row component contract).
 - **CountBadge** — REUSE the ruled shared component (one component, 37 atoms consolidated — snapshot §4) for header counts and tab counts.
@@ -336,7 +342,9 @@ Default pane topology and ratios:
 - Focus/selected/hover: hover = rung-1 ground; selected = accent-tint edge + rung-2 ground; focus = accent ring; lit evidence row = the ruled lit-trace treatment (the one live paper-accent render today — snapshot §4).
 - Chart style: marks-as-instruments (12 discrete points, 6px targets with 24px hit areas), reference lines hairline rung-4 with end labels, no gridlines beyond the hairline baseline, readout in mono; severity tint only at verdict-crossing marks.
 - Motion: 120ms ease-out on Evidence summon and row expansion; mark-click readout snaps (no tween on data); `prefers-reduced-motion` collapses all to instant.
-- Long-session ergonomics: register scan relies on chip position (fixed columns) not color memory; sticky header row; the record's tab strip sticks under the header on scroll.
+- Chip grammar (one system across register and record): status chips = rounded 16px height, rung ground + rung-9 ink; verdict chips = the ruled status tokens; basis badges = shape/fill distinction (§11); hash chips = mono, 8-char short form + copy affordance; every chip that names an object is a link, every chip that names a state is inert — the distinction is visible (link chips underline on hover).
+- Icons: Lucide-only, no emoji (locked law); icons never carry meaning alone (always paired with a word or accessible name).
+- Long-session ergonomics: register scan relies on chip position (fixed columns) not color memory; sticky header row; the record's tab strip sticks under the header on scroll; density is constant across sessions (no responsive font scaling that would break figure alignment).
 
 ## 14. Benchmark research and synthesis
 
@@ -361,7 +369,7 @@ Those four properties come from Covenant's own laws (02, 05, 06), not from any b
 
 ## 15. Domain references
 
-Finley and LoanBoss (above) plus the servicer-side world the packages feed — JLL-class servicer questionnaires and Form 6001.NR reporting structures (evidence: SLOT-3/4) — supply terminology (deliverable, critical date, lender-adjusted definition, notice window) and expected-data shape only. **Domain authority ≠ visual authority:** none of these products contributes a pixel. Covenant semantics — thresholds, test definitions, cadences, basis — come exclusively from each loan's own documents and Terry's rulings, never from any referenced product (ABSOLUTE LAW 8).
+Finley-class covenant/deliverable trackers and LoanBoss-class CRE debt managers (above, per the DIRECTION: domain truth, not visuals) plus the servicer-side world the packages feed — JLL-class servicer questionnaires and Form 6001.NR reporting structures (evidence: SLOT-3/4) — supply terminology (deliverable, critical date, lender-adjusted definition, notice window), expected-data shape, and workflow semantics only. **Domain authority ≠ visual authority:** none of these products contributes a pixel, a layout, or an interaction. Covenant semantics — thresholds, test definitions, cadences, basis, due-rules — come exclusively from each loan's own documents and Terry's rulings, never from any referenced product (ABSOLUTE LAW 8).
 
 ## 16. Accessibility, performance, and safety
 
@@ -418,7 +426,7 @@ Fixtures: **Bexley** (canon: $15,232,500 UPB · 4.17% fixed · 301 units · Fann
     - a foreign-org deep link returns the honest 404-shape (parity with the send vertical's 404);
     - reviewer role sees no star/view-edit affordances (absent, not disabled);
     - PMC preparer sees only their client's loans, with the Client column present; a single-owner org never renders a Client column (02 §1).
-13. **Viewport fixtures:** 1440/1728/2048 render per §10 ratios; at 1250px Evidence stacks as labeled tab (no silent compression); register at 1152×720 fully operable.
+13. **Viewport fixtures:** 1440/1728/2048 render per §10 ratios; at 1250px total width the Evidence window stacks as a labeled tab instead of squeezing below 560px (no silent compression — frame law); the register at 1152×720 remains fully operable with the narrow column-fold engaged; financial figures never truncate at any fixture width.
 14. **Keyboard fixture:** `G L` → register → `↓↓ Enter` → Bexley → arrow to covenant strip → `F` expands → provenance chip → Evidence opens with focus inside → `Esc` closes panel without navigating.
 15. **Accessibility:** axe-clean on both routes; verdict cell screen-reader string includes the basis word; trend marks reachable and announced.
 16. **Benchmark challenger review:** a reviewer armed with the R5/R3 notes confirms the shipped surface takes only the named patterns and rejects the named rejects (no Attio schema editing, no Stripe filter sprawl, no tickler-model period rows).
@@ -439,4 +447,5 @@ Fixtures: **Bexley** (canon: $15,232,500 UPB · 4.17% fixed · 301 units · Fann
 - Migration from fixture data: `book.ts` (574 lines, 7 loans — snapshot §3) becomes the seed migration for the persisted book (canon values preserved verbatim); each region flips per-region behind the flag; the trend view's demo-readings input is the LAST fixture removed, because it currently exercises the real assembler and proves the wire.
 - Rollout/feature flag: `covenant.loans.engine` scoped per region (register / each record tab); a region is engine-backed or labeled fixture, never blended — no fixture string may sit beside an engine figure unlabeled.
 - Proof artifacts required: screenshots at 1440/1728/2048 + narrow; canvas-readback token audit (zero local grays, ruled tokens only); the vocabulary-law test run green; a recorded lit-row trace on Calloway terms (correct region, stays lit); the trend-mark → sealed-period navigation capture; the dedupe unit-test output on the shared-collateral fixture.
+- Roadmap slot: this brief discharges gap 11 (multi-loan handling fixture-only) in wave **W3** with the property-dedupe aggregation rule from 02 §1 (05 §6 gap table).
 - Final gate: **ADJUST** confirmed — IA kept, the trend wire preserved and extended, every figure re-sourced from the engine; re-run the benchmark challenger review (test 16) against R5's Attio/Stripe mechanics before widening past the Bexley slice.
