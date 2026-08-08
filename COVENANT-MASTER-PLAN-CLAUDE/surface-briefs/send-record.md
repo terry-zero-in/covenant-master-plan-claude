@@ -187,10 +187,16 @@ Absent by design: charts; any content preview editing (the certificate sheet abo
 ## 10. Layouts and viewport behavior
 
 - The panel inherits the certificate route's topologies (certificate brief §10): rail 320 at 1440 / 380 at 1728 / 400 at 2048; the panel is the rail's bottom section, min-height 320px when active.
-- **1440px**: panel 320 wide; ceremony modal 560 centered; receipt stacks below history.
-- **1728px**: panel 380; the modal offsets left so the sheet's hash chip stays visible during the ceremony (the approved-bytes co-visibility held even mid-act).
-- **2048px**: panel 400; with the Evidence overlay pinned (certificate §10), the panel remains rightmost — the act never hides behind evidence.
-- **Narrow/compact (<1280px)**: the panel is the "Send" tab above the sheet; the ceremony is a full-viewport takeover; the receipt renders in the tab and in the period header summary.
+- **1440px**
+  - Panel 320 wide; ceremony modal 560 centered; receipt stacks below history.
+  - The certified sheet's hash chip and the panel's statement co-visible at rest.
+- **1728px**
+  - Panel 380; the modal offsets left so the sheet's hash chip stays visible during the ceremony (the approved-bytes co-visibility held even mid-act).
+- **2048px**
+  - Panel 400; with the Evidence overlay pinned (certificate §10), the panel remains rightmost — the act never hides behind evidence.
+- **Narrow/compact (<1280px)**
+  - The panel is the "Send" tab above the sheet; the ceremony is a full-viewport takeover with identical content.
+  - The receipt renders in the tab and in the period header summary.
 - Minimum viable dimensions: 1152×720 (the certificate route's minimum governs); below, the ceremony refuses with the frame's larger-window state.
 - Focus behavior: after certify completes, focus moves to the panel header (the natural next act); after send, focus lands on the receipt.
 - Compare/proof behavior: hash expand-in-place; no split windows here, ever.
@@ -198,17 +204,27 @@ Absent by design: charts; any content preview editing (the certificate sheet abo
 
 ## 11. Components and exact anatomy
 
-- **SendPanel** — NEW (`src/components/covenant/send/SendPanel.tsx`). The rail section: header + validity chip, then the stack per §7; mounts only when a valid un-voided certification exists.
+- **SendPanel** — NEW (`src/components/covenant/send/SendPanel.tsx`). Parts:
+  - Header "Send to lender" + certification validity chip (certified {who}, {when} — links the record).
+  - The stack per §7: RecipientBlock → TransportRow → ApprovedBytesStatement → DeadlineContext → SendControlZone.
+  - Mounts only when a valid un-voided certification exists (absent otherwise, never disabled).
+  - Post-send it re-renders as receipt + seal + prior-sends (§8 Region C).
 - **RecipientBlock** — NEW. Parts:
   - Recipient rows: name · role/organization · address (per transport), uniform row heights.
   - Provenance line: "learned {date} from {who}" linking the lender-scope MemoryEntry (03 §3); corrected entries show version affordance.
   - Edit-in-place with typed save; a correction writes a new memory version (never edits history).
-- **TransportRow** — NEW. Download bundle (live; the act's transport today — the download IS the send transport, gate-recorded) · Email (rendered, labeled roadmap, disabled honestly — same gate when built, never a bypass; 02 §6).
+- **TransportRow** — NEW. Parts:
+  - Download bundle — live; the act's transport today. The download IS the send transport: the gate runs, the record writes, then the bundle downloads (download-first per the real API; snapshot §3).
+  - Email — rendered, labeled roadmap, disabled honestly ("email delivery is not yet available"); when built it rides the **same gate** as an additive transport, never a bypass (02 §6).
+  - Transport is recorded on every SendRecord; the receipt names it.
 - **ApprovedBytesStatement** — NEW. Parts:
   - Sentence: "You are sending exactly what you certified."
   - Two HashChips (REUSE from certificate brief): certified hash · outbound bundle hash, with the equality mark between; either expands to full.
   - If the engine ever computes inequality, the panel refuses to render the SEND control at all and shows the mismatch as a defect state (this state existing visibly is itself a safety property — it must be impossible-by-construction, and if constructed anyway, loud).
-- **DeadlineContext** — NEW. Due date · days remaining · due-rule provenance ("Q+45d per §8.02(b) — evidence-class cite") · escalation state chip when the ladder is active.
+- **DeadlineContext** — NEW. Parts:
+  - Due date · days remaining (tabular figures) · due-rule provenance ("Q+45d per §8.02(b) — evidence-class cite").
+  - Escalation state chip when the reminder ladder is active (Carta-style marks — R4), linking the Calendar row.
+  - Overdue renders loudly (the one push-eligible class per policy) — and still, only a human sends.
 - **SendCeremonyModal** — NEW. Parts per §8 Region B: full restatement block · irreversibility statement · typed-SEND field with live match · Send button in the Covenant accent family (#7189FF, hover #8EA1FF, active #6078F4, label #0B1020 on-accent) — deliberately NOT the certify blue-violet: the two ceremonies must not look or feel alike (R4: NN/g adaptation; the paper hexes stay on the certificate's act).
 - **SendReceiptCard** — NEW. Fields: timestamp · actor · transport · recipient(s) · bytes hash (HashChip) · gate result; rendered as a receipt object (document-adjacent card), exportable text; links: certification record, Reports row, sealed period.
 - **SealedBanner** — NEW. The seal mark + the in-surface explanation of seal-not-wipe (§5 sent/sealed wording); renders here, on the certificate header, and on the sealed period everywhere via the period status.
@@ -221,7 +237,17 @@ Absent by design: charts; any content preview editing (the certificate sheet abo
 - Selection: recipient rows and receipt fields selectable for copy; hash chips copy on click.
 - Hover: provenance line reveals full memory context; accent-family controls follow ruled hover states.
 - Focus: panel is fully traversable; the ceremony traps focus (standard modal trap, Esc exits).
-- Keyboard: `Tab` through recipient → transport → statement → deadline → SEND; `Enter` on SEND opens the ceremony; inside, typing SEND is the only arming mechanism; no shortcut fires the act; `Esc` cancels. `G F` reaches the certificate route (host surface).
+- Keyboard map:
+
+| Key | Context | Behavior |
+|---|---|---|
+| `G F` | loan context | Reach the certificate route (this surface's host) |
+| `Tab` / `Shift+Tab` | panel | Traversal: recipient → transport → statement → deadline → SEND |
+| `Enter` | focused SEND control | Open the send ceremony modal |
+| (typing `SEND`) | modal | The only arming mechanism — no shortcut arms or fires the act |
+| `Enter` | armed Send button focused | Fire the act (single fire; button locks during the gate pass) |
+| `Esc` | modal open | Cancel; nothing written |
+| `Enter` | recipient row | Edit-in-place; typed save on `Enter`, revert on `Esc` |
 - Editing and validation: recipient edits validate per transport (address shape); typed save; the SEND word must match exactly, case-sensitive, stated in the field's label.
 - Bulk action: none — sends are per package, always singular; there is no "send all ready" anywhere in the product (the Avalara rejection made structural).
 - Undo/recovery: none post-act (§5); pre-act cancel is free; an unknown-outcome timeout instructs a receipt check before retry.
@@ -274,7 +300,12 @@ Terminology and workflow-expectation references only: loan-servicer submission w
 - Table virtualization/large data: not applicable (bounded lists).
 - Loading and latency feedback: the gate pass holds a working state; unknown-outcome timeouts instruct receipt-check-before-retry; no optimistic "sent" ever renders before the record exists.
 - Destructive action confirmation: send is the product's one irreversible act — the typed ceremony is the confirmation; nothing stacks on it.
-- Certify and external-send safety: the gate re-checks org scope, role, certification validity, and approved-bytes hash server-side on every pass (02 §6); hash(sent) == hash(certified) or the gate refuses; no agent, scheduled job, or API path sends without an authenticated human session's typed act; failures render exactly (503/404/403 with why).
+- Certify and external-send safety (the template's typed-acts/approved-bytes triad, applied to gate two):
+  - The gate re-checks org scope, role, certification validity, and the approved-bytes hash server-side on every pass — client state is never trusted (02 §6).
+  - hash(sent) == hash(certified) or the gate refuses; there is no override.
+  - No agent, scheduled job, or API path sends without an authenticated human session's typed act (R4 synthesis 12).
+  - Failures render exactly as returned (503/404/403 with the gate's why); a masked failure is a defect.
+  - The two ceremonies stay mutually distinct in mechanics and palette so neither decays into reflex (NN/g budget — R4).
 - Source immutability: sent bytes are the certified bytes; the SendRecord is append-only; sealed periods are read-only forever.
 - Auditability: SendRecord + seal event + the receipt reconstruct every delivery forever; Reports is the register; re-sends append, never replace.
 
@@ -311,6 +342,10 @@ Fixtures: `FIX-CAL-2018` (Calloway Park FYE-2018 evidence spine, certified per t
 - Components to build first: SendPanel + ApprovedBytesStatement (the proof spine) → SendCeremonyModal → SendReceiptCard + SealedBanner → GateFailureCard set → RecipientBlock with memory wiring → DeadlineContext + reminder states → Reports cells.
 - Vertical slice: this IS the vertical — the API already runs gate → record → flip against persisted state (snapshot §3). The slice is UI-completion: one loan+period, panel → ceremony → real API → receipt → sealed render, end to end, no mock at any layer.
 - Migration from fixture data: none to migrate in the gate (already real); the panel must launch wired — a fixture send panel is forbidden (it would demo an irreversible act against nothing).
-- Rollout/feature flag: `covenant.send.moment` gates the panel; the email transport lands later behind `covenant.send.email` on the same gate (additive transport, never a bypass — 02 §6).
+- Rollout/feature flag: `covenant.send.moment` gates the panel. Order:
+  1. Panel + approved-bytes statement + ceremony against the real API (download transport).
+  2. Failure cards + reminder states.
+  3. Reports cells wired to real records.
+  4. Email transport later behind `covenant.send.email` on the same gate (additive transport, never a bypass — 02 §6).
 - Proof artifacts required: a full-period screencast (certify → send → receipt → sealed) on seeded persistence; the three failure renders (503/404/403) captured against the real API; the append-only store assertion output.
 - Final gate: `ADJUST` at the system level (the vertical stands; the moment completes it) — ship when tests 1–15 are green against the real gate, never against a mock.

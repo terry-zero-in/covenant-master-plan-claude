@@ -27,7 +27,7 @@ Consumes: the ruled token system (settled law — zero new colors, ever), the pa
 
 The design-system packages author colors in oklch that Lightning CSS compiles **~2 shades darker** than authored; `src/styles/covenant-tokens.css` therefore pins the DS-labeled hex values, and the standing verification method for any Covenant color claim is **canvas readback of the rendered surface** (snapshot §4; memory `covenant-ds-oklch-renders-dark-pin-hex.md`; 08 test 7 applies it to the frame). This contract makes readback the *only* admissible evidence for a contrast claim:
 
-- A contrast assertion in any brief, PR, or review is invalid unless produced by the readback harness (§11) against rendered pixels.
+- A contrast assertion in any brief, PR, or review is invalid unless produced by the readback harness (§12) against rendered pixels.
 - The arithmetic table in §2.2 is **expected values** computed from the authored hexes — an anchor for the harness, never a substitute for it. If readback disagrees with the authored hex, that is the oklch trap firing: the build fails on the delta itself, before any contrast question is even asked.
 - The full verification matrix is enumerated from `covenant-tokens.css` mechanically: every text-role token × every surface token it may sit on (the ten-rung gray ladder rungs, the periwinkle accent family, the certified-sheet hexes), plus every non-text meaning-bearing pair (focus indicators, chip boundaries, chart marks) against SC 1.4.11's 3:1. Rung values are not restated here — the token file is the authority; the harness reads it, this file rules on the results. The gray ladder was adopted with the raised-rung usage *measured* before ruling (snapshot §4) — the same measurement culture governs here.
 
@@ -112,7 +112,7 @@ Tab → Enter        the Certify commit control (enabled only when the attestati
 Esc (any time pre-commit)  cancels; focus returns to the invoking control; nothing written
 ```
 
-The send ceremony follows the same skeleton over its own rhythm (recipient review → hash-equality statement → typed SEND), asserted non-identical in §12.6.
+The send ceremony follows the same skeleton over its own rhythm (recipient review → hash-equality statement → typed SEND), asserted non-identical in §13.6.
 
 ## 4. Screen-reader semantics — and the color-blind safety rule
 
@@ -144,7 +144,7 @@ The send ceremony follows the same skeleton over its own rhythm (recipient revie
 
 ## 6. Long-session ergonomics — the monthly close is hours
 
-- **Density modes** (Appearance: comfortable / compact): compact tightens row height and spacing for the 30-loan close; **uniform row heights are preserved in both modes** (law — and the virtualization contract §8 depends on it). Density changes spacing tokens only; zero color changes; both modes pass the full a11y suite (§12.9).
+- **Density modes** (Appearance: comfortable / compact): compact tightens row height and spacing for the 30-loan close; **uniform row heights are preserved in both modes** (law — and the virtualization contract §8 depends on it). Density changes spacing tokens only; zero color changes; both modes pass the full a11y suite (§13.9).
 - **Quiet visual ground:** open-not-boxed tables on the ten-rung ladder, severity-only color, no decorative chrome — hours of exposure without alarm fatigue. Verdict tints appear only where verdicts are; the ground never shouts. The paper surfaces (DocView, the certified sheet) stay light even in the dark frame (ruled) — document reading happens on paper, the instrument chrome around it stays quiet.
 - **No interruptions:** the quiet-log law is an ergonomic law — completed autonomous work never toasts, never pushes, never badges (unread is not a concept, C-8); the one push class is deadline escalation per org policy (04 §2.3). A preparer deep in the close is structurally uninterruptible; what the analyst did while you were away is *discoverable* (Home §4, the quiet feed), never announced.
 - **Session-restore on every deep route:** the URL carries loan + period on every spine surface (08 §1); reload restores shell state; back/forward traverse views (08 test 1). Standing up from the desk costs nothing; the close resumes at Home's your-move, which is always the "where was I" answer (03 §4 — the computed query is the resume point, no separate "continue" feature needed).
@@ -158,7 +158,7 @@ The send ceremony follows the same skeleton over its own rhythm (recipient revie
 3. **10:30 — deep table work.** The 322-row roll scrolls at 60fps with uniform rows; the ground stays quiet (no boxes, no severity tint outside verdicts); the mono figures with slashed zeros stay legible at compact density.
 4. **12:00 — lunch.** The browser closes. Nothing decays: every route is deep-addressable, the period is a durable state, drafts are autosaved.
 5. **13:00 — resume.** Reload → shell state restores (08 test 1); Home's your-move recomputes to the same truth. Clerk re-auth on a stale session returns to the interrupted surface, not to a landing page.
-6. **15:00 — ceremonies.** Certify then send, each its own rhythm (§3.3); no confirmation dialogs were encountered anywhere else all day, so the two typed acts still register as acts (NN/g's habituation constraint, §10.5). Focus lands on each record when written.
+6. **15:00 — ceremonies.** Certify then send, each its own rhythm (§3.3); no confirmation dialogs were encountered anywhere else all day, so the two typed acts still register as acts (NN/g's habituation constraint, §10). Focus lands on each record when written.
 7. **All day — zero interruptions.** The agent's completed work sits in the quiet log for whenever curiosity strikes; the only thing that could have pushed was a deadline escalation, and none fired.
 
 The test of this section is subtractive: nothing in the walkthrough required a pointer, produced a toast, or asked a question the product had asked before.
@@ -209,7 +209,15 @@ The test of this section is subtractive: nothing in the walkthrough required a p
 - The two ceremonies are themselves the SC 3.3.4-class safeguard (reversible/checked/confirmed for legal commitments): each restates exactly what is being acted on (loan, period, revision, hash, recipient) before the typed confirmation — review-before-commit is the ceremony's anatomy, not an extra dialog (R4).
 - Gate refusals are error prevention, not error punishment: a disabled Certify lists each unmet requirement as its own linked row (readiness reasons), so the "error" is fixed at its source, never guessed at.
 
-## 10. Accessibility-relevant states (every surface, one grammar)
+## 10. Benchmark references (per R4/R6 research; roles limited as stated)
+
+| Source | Limited role here | Mechanic taken | Adapted / rejected | Official source |
+|---|---|---|---|---|
+| Nielsen Norman Group | The ceremony budget and the reflex guard (§3.3, §6.1) | "Shown after every decision, users won't spend time double-checking before instinctively clicking"; nonstandard (typed) confirmations reserved for the most dangerous and rare actions | Adapt: exactly two heavy ceremonies, non-identical rhythms, initial focus never on the confirm control; reject OK/Cancel dialogs anywhere | nngroup.com/articles/confirmation-dialog/ |
+| Linear | Keyboard-completeness posture (§3) | Deliberate redundancy: "every action is reachable via button, keyboard shortcut, contextual menu, or palette search"; the palette accelerates, never gates | Adapt: fewer, mnemonic bindings for a reporting audience (per R6's own note); reject engineer-density shortcut sprawl | linear.app/now/invisible-details |
+| Microsoft Copilot rollout (anti-pattern) | The no-interruptions law's control case (§6) | Ambient AI chrome injected into task contexts drove backlash; invoked AI was welcomed, imposed AI despised | Take the lesson only: completed agent work is discoverable in the quiet log, never announced — the ergonomic and attention case for §6's zero-interruption rule | R6 research, anti-pattern entry (rollout coverage cited there) |
+
+## 11. Accessibility-relevant states (every surface, one grammar)
 
 | State | A11y behavior |
 |---|---|
@@ -223,7 +231,7 @@ The test of this section is subtractive: nothing in the walkthrough required a p
 | Reduced-motion | All states above fully legible with zero animation (§7) |
 | Compact density | All states above at compact spacing with uniform rows preserved (§6) |
 
-## 11. Build target (basis-v2)
+## 12. Build target (basis-v2)
 
 - `src/styles/covenant-tokens.css` — consumed as-is (never edited by this workstream; COLOR LAW).
 - NEW `scripts/a11y/contrast-readback.ts` — renders surface fixtures headless, canvas-reads token pairs, compares against authored hexes + §2.2 expecteds; emits pass/fail + amendment-request artifacts. Wired into CI beside the existing engine tests.
@@ -231,7 +239,7 @@ The test of this section is subtractive: nothing in the walkthrough required a p
 - axe integration (`@axe-core/playwright`) in the E2E suite; reduced-motion + density fixtures in the same suite.
 - Ceremony focus-trap behavior lands in the certify/send modal components per their briefs (`/covenant/[loanId]/[period]/certificate` route); `CountBadge`, breadcrumb switcher, and DocView mode-strip semantics land in their owning components (existing `CovenantShell` chrome).
 
-## 12. Acceptance tests
+## 13. Acceptance tests
 
 1. **axe-clean on every surface fixture:** `/home`, `/inbox`, `/intake`, `/loans`, `/loans/[loanId]` (all tabs), `/calendar`, `/reports`, `/documents`, `/documents/[docId]` (all four DocView modes), `/settings/*`, `/rent-roll`, and the spine `/covenant/[loanId]/[period]/{review|composer|certificate|actuals}` — zero violations at the AA ruleset, per fixture, in CI.
 2. **`covenant-keyboard-only-close` (named E2E):** on the Calloway Park FYE-2018 evidence spine — arrival via intake → recognition decision → checklist → confirm schedule → confirm mapping → review with at least one lit-row trace (Enter/Esc round-trip) → certify (typed attestation) → send → sealed record opened from Reports. **Zero pointer events for the entire run.** This is the release-gating walkthrough from arrival to sealed record.

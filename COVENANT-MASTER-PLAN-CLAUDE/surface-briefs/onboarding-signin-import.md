@@ -10,7 +10,7 @@
 - Primary users/roles: the founding owner or PMC principal (creates the org, becomes first admin); invited members (accept-invite path); the outside world (guests hitting the door — today they hit a wall).
 - Frequency and session duration: once per org for the arc (one sitting — R6 research: Mercury reject of multi-day gating); the import surface recurs whenever the book grows; sign-in recurs every session.
 - Error cost: P0 is a *law* violation, not a usability bug — the first-contact surface routes prospects into a different product's funnel (product-boundaries law; C-7). Inside the arc: a mis-imported book poisons every downstream surface (wrong loans → wrong checklists → wrong packages); an undone-able import is the single most dangerous absent affordance (R6 research: HubSpot — the undo it lacks).
-- Success criterion: a new org reaches a real your-move on Home — a first period open, with its checklist — in one sitting; the sign-in page links only Covenant surfaces; an imported book can be reversed in one click before it does damage.
+- Success criterion, measurable: (1) zero non-Covenant links on `/sign-in`, enforced in CI forever; (2) a new org reaches a real your-move on Home — a first period open, with its checklist — in one sitting (≤15 minutes rehearsed, §17.12); (3) an imported book reverses in one click within its eligibility window; (4) the guide reflects true state at all times (computed, reopening on invalidation); (5) if D-6 approves, a guest reaches the Bexley review room read-only without an account.
 
 ## 2. User job and decisions
 
@@ -40,6 +40,8 @@
 
 No-double-homing boundary: onboarding is an *orchestrating* surface — it owns the guide, the batch, and the door, and it performs embedded acts whose records live with their owners (grants in Settings, loans in Loan Detail, address in Settings, periods on the spine). Nothing created here is editable here afterward; every step card links to the owning surface.
 
+The door's link policy is itself an owned artifact: a declared allowlist (Covenant routes + Covenant legal pages) that the CI test (§17.1) enforces. Any future link added to `/sign-in` must extend the allowlist in the same commit — making the C-7 class of violation impossible to reintroduce without tripping a named check.
+
 ## 4. Data and semantic model
 
 - Source facts: uploaded loan documents (magic path — Original bytes + hash on arrival, artifact law); the uploaded CSV file (kept verbatim as the batch's source artifact).
@@ -52,6 +54,7 @@ No-double-homing boundary: onboarding is an *orchestrating* surface — it owns 
 - Versions/periods/packages: ImportBatch versions by re-validation; committed batches are immutable records (undo creates a reversal record, never deletes the batch history); no package grain here.
 - Evidence/provenance: every created loan carries `created_by: import batch {batchId}` or `created_by: extraction from {docId}`; every batch row keeps its source line number; the guide's done-marks each link to the record that satisfied them.
 - Permissions/read-only projections: only admins run the arc's workspace acts (org, signers, address); any member can view the guide; the import surface requires the admin role; the proposed `/demo` mode is a read-only projection for unauthenticated guests (D-6).
+- Demo-mode data (D-6): the canon fixture book only (`book.ts` spine — snapshot §3: one fixture file so surfaces can never disagree), served through the same read paths as real data but against fixture identity — no real org's rows are ever reachable from an anonymous session, structurally (separate data source, not a filtered query).
 
 Field groups and grain: SetupGuideItem (`orgId` × item: state missing/currently-due/done, satisfying record ref) · ImportBatch (`batchId`: file ref, mapping set, row states, committed-at, undone-at) · ImportRow (line no., parsed fields, errors[], repairs[], created `loanId?`) · MappingProposal (file column, target field, confidence, confirmed?) · the embedded objects (org, grant, address, invite, loan, period) at their owners' grain.
 
@@ -136,7 +139,7 @@ Five-lane table (extends 04 §1's "Onboarding & import" row to the full surface)
 | Signers / intake / team | Grant persistence + eligibility (settings vertical); address minting; invite expiry | — | Designate certifier + sender; issue address; invite | Zero-eligible guard | Grant/mint/invite events |
 | Activation | First-arrival detection on the new address → flips the waiting card | Recognizes the forwarded email's sender + content (03 §1 steps 1–2) | Forward the email (outside the product); resolve routing only if unrecognized | Unroutable first arrival (a real gate — the user is watching this one) | Arrival + recognition logged; the activation moment renders in place, not as a push |
 
-Lane invariants (04 §2): the agent proposes mappings and loan records but commits nothing; no number computed here ships anywhere (imports create *records*, not package figures); the two dangerous verbs (certify/send) do not exist on this surface in any form.
+Lane invariants (04 §2): the agent proposes mappings and loan records but commits nothing; no number computed here ships anywhere (imports create *records*, not package figures); the two dangerous verbs (certify/send) do not exist on this surface in any form. One further invariant specific to this brief: the arc never fabricates progress — a step blocked by missing machinery (the intake pipeline pre-gap-1) renders blocked-honest, exactly as a fail-closed computation would (04 §2.5); fixture-era "pretend it works" is the anti-pattern the whole arc exists to retire.
 
 ## 7. Information hierarchy
 
@@ -171,6 +174,15 @@ Absent by design: any covenant verdict, any chart, any package content, any mark
 | Setup-guide sidebar (left) | Steps in dependency order: 1 create org · 2 bring the book · 3 designate signers · 4 your intake address · 5 invite team (optional) · 6 first period opens (outcome); each with state dot + done-link | pinned | Click any unlocked step; resume lands on the first `currently-due` | 260px | <1280px: horizontal stepper above content | Mercury's resumable sidebar (R6) — progress must be visible from every step |
 | Step pane (the one big pane) | The current step's work | persistent | Per step | 720px | scrolls | Pane-model law |
 | Consequence footer | What completing this step causes | pinned within pane | — | — | — | The arc teaches the product's causality as it runs |
+
+Consequence-footer copy per step (the exact teaching lines — engine-computed values interpolated, never invented):
+
+- Step 1: "Your organization is the boundary — every document, permission, and send record keys to it."
+- Step 2: "Each loan gets its own reporting schedule from its own documents."
+- Step 3: "Covenant's gates will check these names at certify and send time."
+- Step 4: "Anything sent to this address lands in your Intake queue — recognized, classified, and held to the right loan's checklist."
+- Step 5: "Invites expire in {N} days; roles limit what each person can touch."
+- Step 6: "{Loan}'s {period} is open — {M} items expected, due {computed date}."
 
 Step panes, exactly:
 
@@ -213,6 +225,9 @@ Step panes, exactly:
 | Proposed loan field (magic path) | Its source region in the document | YES | The confirm act (lit-row law — proof beside the claim) | The embedded extraction surface's split | Per that brief |
 | Intake address | The activation waiting card | YES | "Forward your next lender email here" needs the address in view | Same step pane, stacked | — |
 | Invite step | Signers already designated | NO | Link suffices ("{name} certifies · {name} sends") | Summary chip | — |
+| Validation error class | Its member rows | YES | Repair-by-class efficiency | Class expands to rows in the panel | — |
+| Duplicate row | The existing loan it collides with | YES | The resolve choice needs both in view | Side-by-side within the row expansion | — |
+| Guide item done-mark | Its satisfying record | NO | Link suffices | Done-link | — |
 | Demo banner (D-6) | Every demo screen | YES | The guest always knows it's sample data | Persistent header chip | — |
 
 ## 10. Layouts and viewport behavior
@@ -248,8 +263,12 @@ Step panes, exactly:
 - **SignerDesignation** — NEW thin wrapper over the Team & Roles grant act: two person-pickers (certifies / sends), eligibility preview, typed confirm (the act itself is the settings-owned grant).
 - **DemoBanner** — NEW (D-6 only). Persistent header chip "Demo book — sample data".
 - **CountBadge** — REUSE for guide remaining-count on the Home card.
-- **CommandPalette** — REUSE; registers "Setup guide", "Import loans", "Upload loan documents".
-- Empty/error/recovery object — REUSE app-wide pattern; the import surface's error rows are its recovery objects.
+- **CommandPalette** — REUSE; registers "Setup guide", "Import loans", "Upload loan documents", "Copy intake address" (once minted — a computed-result row per the palette grammar, 08 §5).
+- Empty/error/recovery object — REUSE app-wide pattern; the import surface's error rows are its recovery objects. The empty states this brief owns, exactly:
+  - `/loans` empty (no loans): "Bring your book" card with both paths — the arc's step 2 rendered in place.
+  - `/documents` empty: "Documents arrive by upload or your intake address" with the address card (once minted) — a summary of the Settings-owned record, linked (02 §3).
+  - `/loans/import` empty: the dropzone + template download.
+  - The guide with everything done: the Home card retires itself (Ramp's guide ends when genuinely done — R6).
 
 ## 12. Interaction specification
 
@@ -257,7 +276,7 @@ Step panes, exactly:
 - Hover: sample values expand; error chips show detail; guide steps show their satisfying record.
 - Focus: each step autofocuses; visible accent-family ring everywhere.
 - Keyboard: full arc completable keyboard-only (dropzones accept browse; pickers are comboboxes); `⌘K` from any step ("skip to invite team", "import loans"); Esc backs out of a step to the guide without losing state; G-chords inactive pre-org, active once the shell mounts.
-- Editing and validation: mapping confirms are per-column explicit acts; row repair is inline edit with the original value preserved and shown struck-through; validation re-runs on repair, live.
+- Editing and validation: mapping confirms are per-column explicit acts; row repair is inline edit with the original value preserved and shown struck-through; validation re-runs on repair, live. Field validation rules (deterministic, engine-owned): UPB/figures parse as currency with thousands tolerance; dates parse against common formats with the resolved format shown per column (never guessed silently per cell — one format per column, confirmable); rate parses as percent or decimal with the interpretation displayed ("4.17" → 4.17%); the PMC client column must match an existing Client exactly (no fuzzy client matching — a wrong client scope is a tenancy breach, not a typo).
 - Bulk action: bulk-exclude error rows; bulk-accept high-confidence mappings ("confirm all ≥ high confidence" — one act, logged as one event with the column list).
 - Undo/recovery: the batch undo (§5.3) — reverses every created loan and their guide effects in one transaction, writes `import.batch_undone`, and returns the surface to `validated`; repairs and mappings survive for a corrected re-commit. Where undo is impossible by design: after a created loan is worked (confirmed schedule/filed doc/arrivals) — the commit bar said so up front.
 - Sorting/filtering: results register filters by state (error/repaired/clean/excluded/duplicate); sort by line number default.
@@ -308,7 +327,8 @@ Loan-servicing and financial-close products are consulted for terminology and ex
 ## 16. Accessibility, performance, and safety
 
 - WCAG contrast and focus: AA on all used rungs; visible focus ring; the demo banner (D-6) meets contrast on its tint ground.
-- Keyboard completeness: the entire arc and the entire import (including repair and undo) keyboard-only completable; dropzones have browse equivalents.
+- Door security posture: no user enumeration (identical response for unknown vs known emails); rate limiting on auth attempts; invite tokens single-use and expiring; deep-link preservation never carries credentials in the URL.
+- Keyboard completeness: the entire arc and the entire import (including repair and undo) keyboard-only completable; dropzones have browse equivalents; the map table navigates as a grid (arrows between cells, Enter confirms the focused mapping, `e` opens repair on a focused error row).
 - Screen-reader semantics: the guide is a labeled list with state announcements ("step 3 of 6, current"); the map table announces proposal confidence; validation errors are associated with their cells; the activation card announces its flip.
 - Table virtualization/large data: the results register virtualizes (a 2–50 loan book is trivial, but PMC books and future CSV re-imports may run long); validation is streamed with a progress readout.
 - Loading and latency feedback: per-file processing states; validation progress; commit shows a transactional pending state — never optimistic (a half-created book must be impossible; the commit is one transaction).
@@ -319,7 +339,7 @@ Loan-servicing and financial-close products are consulted for terminology and ex
 
 ## 17. Acceptance tests and fixtures
 
-Fixtures: the Calloway Park document kit for the magic path (evidence: SLOT-3 loan agreement Form 6001.NR + riders 6220/6241; SLOT-1 T-12; the servicer forms); a 7-row CSV of the canon book (Bexley `$15,232,500 · 4.17% · 301 units`, Westbrook Flats, five peers) with three seeded defects (one unparseable rate, one duplicate loan identifier, one missing lender); member fixtures per the settings brief.
+Fixtures: the Calloway Park document kit for the magic path (evidence: SLOT-3 loan agreement Form 6001.NR + riders 6220/6241; SLOT-1 T-12; the servicer forms — the executed forms' flattened zero-text-layer scans exercise the Recreated-searchable label); a 7-row CSV of the canon book (Bexley `$15,232,500 · 4.17% · 301 units`, Westbrook Flats, five peers) with three seeded defects (one unparseable rate, one duplicate loan identifier, one missing lender); a fixture lender email (recognized sender, statement attachment) for the activation test; member fixtures per the settings brief; an unknown-form PDF for the fail-closed test.
 
 1. **P0 — the door (C-7 / U12-F2):** crawl every anchor, button-href, and redirect on `/sign-in` (authenticated and not): all resolve to Covenant routes or Covenant's own legal pages; zero references to any other product in links, copy, or metadata. This test is CI-permanent — the boundary violation can never regress silently. Ships before everything else on this brief.
 2. **Requirements-hash guide:** create an org → guide shows exactly the missing items; import the book → book item flips done and the signers item becomes `currently-due`; revoke the only send grant later → the guide item *reopens* and the Home card returns (Stripe-pattern recompute, R6).
@@ -338,8 +358,12 @@ Fixtures: the Calloway Park document kit for the magic path (evidence: SLOT-3 lo
 15. **Viewport fixtures:** 1440/1728/2048 per §10; <1280px stepper + horizontal-scroll map table with the columns chip; 1152×720 usable.
 16. **Keyboard fixture:** the full arc keyboard-only, including a mapping confirm, a row repair, commit, and undo.
 17. **Provenance fixtures (lit-row):** a proposal field lights its exact source region in the embedded extraction view and stays lit; a batch row highlights its CSV line.
-18. **Accessibility:** screen-reader pass over the guide states, map table confidence announcements, and the activation flip.
-19. **Benchmark challenger review:** an operator fluent in HubSpot imports must attempt to break the batch (partial commits, double-undo, re-commit after undo, concurrent commits) — every path ends in a consistent, audited state.
+18. **Template round-trip:** download the CSV template, fill it with the canon book, import → zero mapping corrections needed (the template's headers auto-match at full confidence).
+19. **Per-column date format:** a column mixing two date formats errors at the column level with the resolved-format choice explicit — no per-cell silent guessing.
+20. **PMC client guard:** a row naming a non-existent client errors (no client auto-creation); after adding the client in Settings, re-validation clears the row.
+21. **Guide-undo interaction:** undo the only committed batch → guide item 2 reopens to `currently-due`, item 6's period is reversed with it, and the Home card returns — the hash computes backward as well as forward.
+22. **Accessibility:** screen-reader pass over the guide states, map table confidence announcements, and the activation flip.
+23. **Benchmark challenger review:** an operator fluent in HubSpot imports must attempt to break the batch (partial commits, double-undo, re-commit after undo, concurrent commits) — every path ends in a consistent, audited state.
 
 ## 18. Build plan
 
@@ -349,5 +373,12 @@ Fixtures: the Calloway Park document kit for the magic path (evidence: SLOT-3 lo
 - Vertical slice (the send-vertical pattern): **the import vertical** — one route (`/loans/import`), the real CSV library end to end: stage → map → validate → commit → loans persisted with provenance → undo → reversal proven. It is the cheapest full-stack seam on this brief and unblocks every downstream surface's need for real loans.
 - Migration from fixture data: none to migrate — this surface has no fixture predecessor; the demo book stays canon for `/demo` (D-6) and is never written by onboarding.
 - Rollout/feature flag: `onboarding-v1` for the arc; the import vertical can ship to existing internal orgs first (it stands alone at `/loans/import`); `/demo` ships only on a D-6 GO.
+- Build order (waves):
+  1. P0 sign-in fix + CI link-policy test (independent of everything; ships day one).
+  2. The import vertical (`/loans/import` over the existing CSV library): stage → map → validate → commit → undo, persisted.
+  3. SetupGuide service + `/onboarding/*` shell with steps 1/3/5 (org, signers, invites — all on existing/settings verticals).
+  4. Magic path (blocked on gap-2 extraction wiring + the Extraction & Confirmation surface; the step ships as "coming — import your list meanwhile" honesty until then).
+  5. Intake step + ActivationCard (blocked on gap-1 pipeline).
+  6. `/demo` (on D-6 GO; pure read-only projection over canon fixtures — cheapest wave, gated only by the ruling).
 - Proof artifacts required: the CI link-policy test green on `/sign-in`; a recorded import commit + undo round-trip; the magic-path proposal with lit source regions over the Calloway Park kit; the activation flip recording once gap 1 lands.
 - Final gate: `REBUILD` of the door confirmed done when test 17.1 is CI-permanent and a guest has a lawful path (sign-in, plus `/demo` if D-6 approves); the arc and import graduate `UNBUILT → REAL` on their verticals, never through fixtures.
