@@ -21,7 +21,13 @@
 
 - **Primary job-to-be-done:** trust the preparation. The agent layer exists so the ~60-second review is believable: the borrower can interrogate any figure (Ask), be warned before a covenant problem matures (Watch), never answer the same question twice (Memory), watch the agent get measurably better (Learning), and audit everything it did without being interrupted by any of it (Quiet log).
 - **Decisions made here:** disposition a finding (acknowledge / accept residual risk with typed reason / route to the owning surface / dismiss with reason); correct a remembered answer (versioned); approve nothing — approvals of drafts happen on the surfaces that own the drafts (Composer, Correspondence).
-- **Questions the surface must answer in scan order:** Is anything drifting toward a covenant problem? (findings) → Why is this number what it is? (Ask + lit-row) → What has the agent already handled? (quiet log) → What does it remember about my book, and is it right? (memory inspector).
+- **Questions the surface must answer in scan order:**
+  1. Is anything drifting toward a covenant problem, and how far is the line? (findings, headroom phrasing)
+  2. Why is this number what it is? (Ask + the lit-row chain)
+  3. What did we tell the lender, exactly, and when? (Ask over sealed records)
+  4. What has the agent already handled without me? (quiet log root acts)
+  5. What does it remember about my book, and is it right? (memory chips + inspector)
+  6. Is it getting better where I corrected it? (repeat-error metric)
 - **What the user should not have to decide here:** whether a figure is trustworthy (provenance is structural); what the agent may do autonomously (the five-lane law decides); when to be notified (policy in Settings, one push class).
 - **The watch's rule classes (the trigger-library concept, framed without inventing domain content):** the findings service evaluates rules of exactly three shapes over engine outputs, each rule referencing the loan's own confirmed RequirementRecords (never a global default):
   1. **Headroom trend rules** — signed headroom (dual-denominated, 05 §3) shrinking across N periods toward a threshold ("watch-band approach"); the canon instance: DSCR headroom framed as "$240K of NOI from a DSCR shortfall".
@@ -123,11 +129,25 @@ ActivityEvent {
 
 ## 5. State machine and exceptions
 
-**Finding lifecycle** (02 §2): `raised → acknowledged → dispositioned`, engine-triggered raise, human-only disposition, reversible only forward (a dispositioned finding whose underlying condition recurs raises a NEW finding linked to the prior disposition — no silent re-open). Every transition writes an ActivityEvent.
+**Finding transitions:**
 
-**MemoryEntry lifecycle:** `proposed-from-answer → active → corrected(v+1) → retired`. The capture moment is visible in-flow ("Remembered: …" inline chip at the moment of capture — R6: ChatGPT's visible saving, upgraded with provenance). Corrections version; the agent always uses the newest (02 §5); retirement (entry deleted in the inspector) is a typed act with a shown consequence ("the agent will ask this again next period").
+| Transition | Trigger | Actor | Prerequisites | Reversible? | Audit event | Failure behavior |
+|---|---|---|---|---|---|---|
+| — → raised | Rule fires on computation update | Engine detects; agent frames | TestResult/checklist inputs confirmed-grade | n/a | `finding.raised` + evidence refs | Rule evaluation error → logged, never a phantom finding |
+| raised → acknowledged | "Acknowledge" on the card | Human | Role may disposition | No (forward-only) | `finding.acknowledged` (who/when) | — |
+| raised/ack → dispositioned | Typed disposition act | Human only | Reason text required for accept-residual-risk and dismiss | No — a recurrence raises a NEW finding with `supersedes` ref | `finding.dispositioned` (kind, reason, who) | A blocking finding cannot be dismissed while it blocks readiness; the card says why |
+| dispositioned → (new raised) | Same condition, changed inputs | Engine/agent | Inputs-hash differs | n/a | `finding.raised` linking prior disposition | No silent re-open, ever |
 
-**Ask exchange:** `composing → grounded-answering → answered-with-citations | refused-naming-missing`. No partially-grounded state ships: an answer that cannot cite every figure downgrades to refusal.
+**MemoryEntry transitions:**
+
+| Transition | Trigger | Actor | Prerequisites | Reversible? | Audit event | Failure behavior |
+|---|---|---|---|---|---|---|
+| — → active | Human answers an ask-once question; capture chip shown in-flow (R6: ChatGPT visible saving) | Human answers; agent captures | The question was not already remembered (structural: the store is checked before any ask renders) | Via correction | `memory.captured` (provenance) | Capture failure → the question re-renders next period; never a half-saved entry |
+| active → active(v+1) | Correction in chip popover or inspector | Human | Typed edit; consequence shown if `downstream_refs` include certified fields (void-on-change cascade, 03 §2) | Prior versions retained, chain visible | `memory.corrected` (v, reason) | — |
+| active → retired | Retire in inspector | Human | Typed confirm; consequence shown ("the agent will ask this again") | Re-capture on next answer | `memory.retired` | — |
+| any reuse | Agent pre-fills a field | Agent | Newest version only (02 §5) | n/a | `memory.reused` (where) | A reuse that cannot resolve its entry renders the empty field + the question — never a stale guess |
+
+**Ask exchange:** `composing → grounded-answering → answered-with-citations | refused-naming-missing`. No partially-grounded state ships: an answer that cannot cite every figure downgrades to refusal (lint gate, §4 pipeline step 6). Refusal is a success state of the pipeline, not an error state — it renders calmly, names the missing grounding class and object, and links the owning surface.
 
 | Template state | How it renders in this layer |
 |---|---|
@@ -160,22 +180,38 @@ ActivityEvent {
 | Capability prompts | Supplies the completable-query set (palette computed-answer grammar, 08 §5) | Rotates prompts drawn only from that set | Taps a prompt to run it | — | — |
 | **Hard prohibitions (structural, restated)** | All shipping numbers computed here and only here | **NEVER certifies. NEVER sends. Never computes or alters a shipping number. Never mutates ground truth past a human gate. Never re-asks a remembered answer. Never pushes for completed routine work** (02 §4; 04 §2) | Certify and send are human-only typed acts on their own surfaces | Certify/send gates belong to Certificate/Send briefs | Push: deadline escalation ONLY, per org policy (03 §5) |
 
+**The one gate this layer owns, specified per the gate law (04 §2.2 — a gate names its typed decision):**
+
+*Blocking-finding gate* (a finding that blocks an imminent certify — e.g. a shortfall on a covenanted test in an open period):
+
+- **Exact ask:** "Disposition this finding before certifying {loan} {period}."
+- **Why blocked:** the verdict + basis ("DSCR below the covenanted 1.20x floor — shortfall" for the Westbrook-class fixture, the computed value and headroom rendered from engine refs; verdict word per vocabulary law).
+- **Evidence:** the TestResult inputs, each lit-row traceable; the headroom sentence in both denominations.
+- **Affected fields:** the package sections that carry the test (covenant section, narrative), listed with links.
+- **Recommendation:** the drafted mitigant narrative, offered — never auto-adopted ("The analyst drafted an explanation; review and adopt it in Composer, or write your own").
+- **Typed decision options:** acknowledge-and-route (open Composer/Actuals with return path) · accept residual risk (typed reason required; recorded against the finding) · correct the underlying input (routes to the owning surface; the finding re-evaluates on recompute).
+- **Consequence of delay:** the period cannot reach certify; the deadline countdown renders on the gate (due-rule provenance from the Calendar's engine).
+- **Audit record:** `finding.dispositioned` with kind/reason/who/when; the review stop's disposition echoes it (one record, two renders).
+
+Memory and Ask never gate (04 §1 row 13): nothing in this layer interrupts a human except a finding that genuinely blocks, and even that renders as a review stop, not a popup.
+
 ## 7. Information hierarchy
 
 Per host surface (this layer rides inside others):
 
-1. **Ask panel (canvas):** the selection/question context (what you asked about, with its provenance chip) → the answer with inline mono citations → the grounding statement ("answered from: Q1 certified package, Q2 engine computation v{n}") → capability prompts (empty state only).
-2. **Finding card:** severity + verdict chip → the consequence sentence (headroom phrasing) → evidence refs (each a lit-row link) → drafted-narrative link → disposition actions → prior related dispositions.
-3. **Memory chip (inline):** the filled value → "learned {date} from {who} during {context}" → inspect/correct. **Inspector (Settings→Agent):** scope filter → entries table → per-entry provenance + version chain + reuse log → repeat-error metric block → master controls.
-4. **Quiet log:** filter chips → root-acts list (newest first) → summoned run detail (timeline left, evidence right).
+1. **Ask panel (canvas):** the selection/question context first (what you asked about, with its provenance chip — the user must always see that the panel knows *exactly* what was highlighted) → the answer with inline mono citations → the grounding statement ("answered from: Q1 certified package · Q2 engine computation v{n}" — every answer discloses its grounding classes) → capability prompts (empty state only). The grounding statement is not a footnote nicety: it is the visible edge of the grounding contract, and it renders on every answer without exception.
+2. **Finding card:** severity + verdict chip first (the triage read) → the consequence sentence (headroom phrasing — dollars before ratios, because the mitigant conversation happens in dollars, 05 §3) → evidence refs (each a lit-row link) → drafted-narrative link → disposition actions → prior related dispositions (the `supersedes` chain). Scan order is severity → consequence → proof → action; a user who reads only the first two lines has the decision-relevant content.
+3. **Memory chip (inline):** the filled value first (it is the field's content), then the microcopy "learned {date} from {who} during {context}", then inspect/correct on interaction. The chip never out-shouts the field it annotates. **Inspector (Settings→Agent):** scope filter → entries table → per-entry provenance + version chain + reuse log → repeat-error metric block → master controls (pause switch last — it is the biggest hammer and the rarest need).
+4. **Quiet log:** filter chips → root-acts list (newest first — recency is the only default sort a log needs) → summoned run detail (timeline left, evidence right). The log's scan promise: a borrower returning from a week away reads the root-acts list top to bottom and knows everything the analyst did, without opening a single detail pane.
 
-**Absent by design:** a persistent chat sidebar; sparkle icons on fields; proactive popups announcing finished work; autonomy-score dashboards ("95% automated" framing — R6: Digits reject); any agent affordance on a surface with no agent task (R6 anti-pattern: Copilot-everywhere).
+**Absent by design:** a persistent chat sidebar; sparkle icons on fields; proactive popups announcing finished work; autonomy-score dashboards ("95% automated" framing — R6: Digits reject); unread badges on the log (badges are your-move only, 08 §8); a chat-history surface (exchanges live in the log as events, not as a conversation product); any agent affordance on a surface with no agent task (R6 anti-pattern: Copilot-everywhere — the named control for this entire layer).
 
 ## 8. Page anatomy and regions
 
 **Ask (canvas panel — the ruled separate slot, does not count against the 2-window split, 08 §4):**
 - Purpose: grounded Q&A beside the work, never over it.
 - Content: question input; selection-context chip (when opened via highlight: the selected text/figure + its source refs travel in — 08 §6); answer stream with citation chips; grounding statement footer; refusal card when applicable.
+- Input states: empty (capability prompts render) · selection-armed (context chip present, input placeholder reads "Ask about this {figure/selection}") · composing (grounding-read skeleton naming the classes being read) · answered (citations live) · refused (RefusalCard, calm tone, links out). The input never renders a spinner without naming what is being read.
 - Persistence: summonable, floating, movable; Esc dismisses; never load-bearing for a decision (08 §4).
 - Interaction: type or arrive-with-selection; click any citation → owning surface opens/focuses with the exact source row lit and held (frame provenance contract, 08 §7).
 - Min dimensions: 360px wide × 320px tall floating; positions away from the lit region and is draggable — Ask never overlays the evidence a question is about (08 §6).
@@ -195,6 +231,17 @@ Per host surface (this layer rides inside others):
 - Run detail (summoned overlay pane within the surface, not a route): step timeline left (recognized → matched → filed, with "Attempt N" badges on retries), selected step's inputs/outputs/evidence right (R6: Inngest two-pane). Minutiae (fetch/parse/retry) collapse into their parent act row, raw event list one level down (R6: Temporal event groups).
 - Filters: actor, action type, loan, period, date — plain chips, no query language (R6: reject CEL/visibility syntax).
 
+**Capability prompts (AskPanel empty state — the locked rotating-prompt law):**
+- Content: 3 prompts at a time, rotating on a slow interval, drawn ONLY from the palette's computed-answer grammar for the loans currently in scope (08 §5) — e.g. against canon fixtures: "What's Bexley's occupancy this period?" · "When is the next §8.02(b) quarterly statement due?" (evidence-class due-rule) · "What changed since the last certified package?". Because the set is computed from currently-answerable queries, a prompt that cannot complete is structurally unrenderable — the law "never advertise an ask that can't complete" is enforced by construction, not by copy review (ruling: memory `agent-ux-cycling-capability-prompts.md`, 2026-07-11).
+- Anatomy: prompt text as a quiet button (accent-family text color); tap runs it as a real Ask; a shuffle control replaces rotation under `prefers-reduced-motion`.
+- Placement: empty state only — the moment an exchange exists, prompts yield to the answer; prompts never interrupt or overlay (anti-Copilot).
+
+**Memory chip states (the inline render, everywhere a remembered answer fills a field):**
+- Filled: value + "learned {date} from {who}" microcopy; popover on click: full provenance (question, context, originating run link), version chain, correct/retire actions.
+- Corrected: chip shows "updated {date}" until next reuse; version chain shows the diff.
+- Stale (source replaced upstream): chip carries the stale badge + diff link; the field's owning surface drives re-confirmation (03 §2).
+- Paused (master switch off): no chips render; every ask-once question renders as a question again; the inspector states the paused condition.
+
 ## 9. Co-visibility matrix
 
 | Datum/surface A | Datum/surface B | Must be simultaneous? | User decision enabled | Default topology | Fallback |
@@ -211,10 +258,14 @@ No pane exists merely because information exists: findings and memory render in-
 
 ## 10. Layouts and viewport behavior
 
-- **1440px:** Ask floats 380px wide over any surface, may dock right (08 §9); finding cards two-up on Home §3 at ~660px each; memory inspector table full-width within Settings' content column (~960px); quiet-log run detail opens as a 50/50 overlay within the surface.
-- **1728px:** Ask floats free 400–420px; finding card + drafted narrative split both ≥560px honors the split law; run detail two-pane 55/45 (timeline/evidence).
-- **2048px:** no third window ever (split max 2 is law); extra width goes to the host surface; Ask max-width 440px — answers are prose+citations, not tables; wider would invite the chat-app feel this brief forbids.
-- **Narrow/compact (<1280px):** Ask docks full-height; finding cards single-column; run detail becomes a full-width labeled overlay ("Run detail — {act}"); the memory inspector table's provenance columns collapse into the row-expand (labeled, not truncated — no silent compression).
+| Viewport | Ask panel | Finding cards (Home §3) | Memory inspector | Run detail |
+|---|---|---|---|---|
+| 1440px | floats 380px wide; may dock right (08 §9) | two-up at ~660px each | table full-width in Settings' content column (~960px) | 50/50 overlay within the surface |
+| 1728px | floats free, 400–420px | two-up with wider consequence lines | table + inline expanded row side room | two-pane 55/45 (timeline/evidence) |
+| 2048px | max-width 440px (capped) | still two-up — never three (density over sprawl) | unchanged; extra width stays whitespace | 55/45, capped content measure |
+| <1280px | docks full-height right (08 §9) | single column | provenance columns collapse into row-expand (labeled) | full-width labeled overlay ("Run detail — {act}") |
+
+- **2048px note:** no third window ever (split max 2 is law); extra width goes to the host surface. Ask stays capped — answers are prose + citations, not tables; a wider panel would invite the chat-app feel this brief forbids.
 - **Focus behavior:** opening Ask never steals focus from a mid-edit field; citation navigation preserves a return path (Esc walks back: lit-row → panel → host surface — 07 §3).
 - **Compare behavior:** none owned here; finding-vs-prior-period comparisons deep-link to the owning surfaces' compare modes.
 - **Minimum viable:** Ask 360×320 floating / full-height dock; finding card 560px; below frame minimum (1152×720) the agent layer follows its hosts.
@@ -236,14 +287,17 @@ No pane exists merely because information exists: findings and memory render in-
 | `RepeatErrorMetric` | NEW | Per correction class: occurrences over trailing periods, trend arrow, alarm state when non-decreasing across two cycles |
 | `ActivityEventStore` + `QuietLog` | NEW store; REUSE feed styling from existing activity components, re-pointed | Uniform rows, open-not-boxed; actor Lucide icon; filter chips; `CountBadge` (shared component) nowhere — the log never badges (badges are your-move only, 08 §8) |
 | `RunDetail` | NEW | Two-pane per §8; attempt badges; raw-events disclosure |
+| `AgentEmptyState` | NEW (shared by findings/log/inspector empty states) | One quiet sentence + the reason ("No findings — last evaluated {time} against computation v{n}") + optional next-evaluation note; never an illustration, never a prompt to "try the AI" |
+| `BlockedCapabilityNotice` | NEW | The honest-block render for capabilities awaiting machinery (occupancy findings pending the rent-roll reader, gap 7): names what is missing + links the dependency; replaces itself with the real feature, never with a fixture |
+| `CapabilityPromptRotator` | NEW | Prompt set computed from the palette's answerable-query grammar (08 §5); 3 visible; slow rotation; shuffle button under reduced motion; tap = run as real Ask |
 | Period/package selector, Evidence panel, lit-row trace | REUSE frame contracts | 08 §2, §7; the agent adds no private provenance renderer |
 
 ## 12. Interaction specification
 
-- **Selection:** any text/figure highlight in any surface raises the HighlightToAsk affordance within 150ms, positioned to not cover the selection; the affordance is also keyboard-reachable (selection present + shortcut).
-- **Hover:** citation chips show the chain summary (source doc + region + confirmer) on hover; memory chips show provenance summary; finding evidence refs show verdict + headroom.
-- **Focus:** panel and popovers hold focus rings per frame tokens; citation navigation returns focus to the citation on Esc-back.
-- **Keyboard:** `⌘K` palette rows "Ask the analyst: {query}" route here (08 §5); within AskPanel: Enter sends, `⌘Enter` sends-with-selection-context, Esc closes; finding cards: `A` acknowledge, `D` disposition menu, `N` open narrative; quiet log: J/K rows, Enter run detail, `F` filter focus. Final chord map defers to `cross-cutting/search-command-keyboard.md` — this brief proposes, that file rules.
+- **Selection:** any text/figure highlight in any surface raises the HighlightToAsk affordance within 150ms, positioned to not cover the selection; the affordance is also keyboard-reachable (selection present + shortcut). Selecting a figure that carries a provenance ref packages the ref; selecting plain prose packages the surface + object context (loan/period identity from the breadcrumb) so even prose questions arrive scoped.
+- **Hover:** citation chips show the chain summary (source doc + region + confirmer) on hover; memory chips show provenance summary; finding evidence refs show verdict + headroom. Hover never carries information that click cannot also reach (hover is acceleration, not the only path).
+- **Focus:** panel and popovers hold focus rings per frame tokens; citation navigation returns focus to the citation on Esc-back; opening Ask while a field is mid-edit never steals focus (the panel opens unfocused with a visible "jump to Ask" affordance).
+- **Keyboard:** `⌘K` palette rows "Ask the analyst: {query}" route here (08 §5 — the palette's engine rows and Ask rows are visually distinct in the palette itself, keeping the deterministic/agent boundary legible in the grammar); within AskPanel: Enter sends, `⌘Enter` sends-with-selection-context, Esc closes; finding cards: `A` acknowledge, `D` disposition menu, `N` open narrative; quiet log: J/K rows, Enter run detail, `F` filter focus, `.` toggle sub-step depth. Final chord map defers to `cross-cutting/search-command-keyboard.md` — this brief proposes, that file rules.
 - **Editing and validation:** memory corrections use a typed edit field with the version consequence shown ("creates v{n+1}; the agent uses the newest"); disposition reasons are required text for accept-residual-risk and dismiss.
 - **Bulk action:** none on findings (each disposition is an individual typed act — deliberately no "dismiss all"); memory inspector allows multi-select retire with per-entry confirm list.
 - **Undo/recovery:** per §5 — versions, not deletions; append-only log.
@@ -267,6 +321,8 @@ No pane exists merely because information exists: findings and memory render in-
 - **Charts:** only `FindingSparkline`, under full doctrine (≤12 marks, severity-only color, every mark clickable, must out-encode the adjacent sentence or not ship).
 - **Motion:** panel summon 150ms ease-out; lit-row light-up 200ms; capability prompts rotate on a slow interval with a full-stop under `prefers-reduced-motion` (rotation becomes a static prompt + shuffle button).
 - **Long-session ergonomics:** no pulsing, no unread-style badges, no attention-seeking chrome — the layer is calm by law.
+- **Iconography:** Lucide-only (actor icons in the log, chip glyphs); no emoji anywhere (locked law).
+- **Empty-state tone:** factual and quiet ("No findings — last evaluated {time}"), never promotional ("Your AI assistant is ready!") — the anti-Copilot register applies to copy, not just chrome.
 
 ## 14. Benchmark research and synthesis
 
@@ -284,7 +340,12 @@ No pane exists merely because information exists: findings and memory render in-
 
 ## 15. Domain references
 
-Finley-class covenant-tracking products and loan-servicing portals: terminology and workflow expectations only (what borrowers expect "covenant status," "compliance certificate," and servicer questionnaires to mean); Digits for finance-agent behavioral posture. **Domain authority does not equal visual authority** — none of these products' visual treatments govern anything here. Covenant semantics — thresholds, test definitions, cadences, what counts as a shortfall — come exclusively from each loan's own documents and from Terry's rulings (canon), never from any referenced product (domain-content firewall).
+- **Finley-class covenant-tracking products** (lender-side covenant monitoring): terminology and expected-data semantics only — what "covenant status," "compliance certificate," "headroom," and "watch" mean to people who live in debt reporting; useful for naming, useless for layout.
+- **Loan-servicing portals and servicer questionnaires** (the JLL evidence set, SLOT-4/5): what lenders actually ask, so findings and Ask answers speak the audience's vocabulary — the questionnaire's own field names are the target grammar for memory-filled answers.
+- **Digits** (R6): the behavioral reference for a finance agent that classifies autonomously and queues the uncertain — posture, not pixels.
+- **Financial-close products** (Numeric/FloQast class, R3 corpus): the exception-first review temperament the findings service inherits.
+
+**Domain authority does not equal visual authority** — none of these products' visual treatments govern anything here. Covenant semantics — thresholds, test definitions, cadences, what counts as a shortfall versus a breach — come exclusively from each loan's own documents and from Terry's rulings (canon), never from any referenced product (domain-content firewall, kit law 8).
 
 ## 16. Accessibility, performance, and safety
 
@@ -297,36 +358,93 @@ Finley-class covenant-tracking products and loan-servicing portals: terminology 
 - **Certify/send safety:** structurally out of reach — no code path in this layer calls the certify or send gates; the palette's dangerous verbs are human-only and role-gated (08 §5); a memory correction touching certified inputs routes through void-on-change with the consequence stated first.
 - **Source immutability:** the agent reads originals, never writes documents; grounding reads are read-only projections.
 - **Auditability:** every exchange, finding, disposition, capture, correction, and reuse is an identity-stamped ActivityEvent; the sealed period's agent history is inspectable forever.
+- **Prompt-injection posture:** grounding reads are structured engine/store queries, never free-text retrieval over document prose — a malicious instruction inside an arrived document cannot alter the answer pipeline because documents contribute regions-by-reference, not executable context; outbound-facing drafts (chases, replies) remain human-approved regardless (external-facing law).
+- **Memory safety:** entries capture only answers a named human gave in-product; the store never infers preferences silently from behavior (every entry has a provenance row or it cannot exist — schema-level NOT NULL on provenance).
+- **Latency honesty:** if a grounding read exceeds its budget, the answer says which class timed out and offers retry — never a degraded answer that silently omitted a grounding class.
 
 ## 17. Acceptance tests and fixtures
 
 Fixtures: **Bexley canon** (UPB $15,232,500 · 301 units · monitored 90% occupancy floor · 268/301 = 89.04% shortfall) and the **Calloway Park FYE-2018 evidence spine** (T-12: Total OpEx $1,686,050 · NOI $1,218,877 · Net Income $460,159; 6001.NR §8.02(b) cadences; 322-row/301-unit roll).
 
-1. **Grounded answer:** Ask "why is NOI $1,218,877?" against Calloway FYE-2018 → answer quotes the figure as an `AskCitation` carrying the Metric ref; click lights the T-12 NOI grouping row in Evidence and it stays lit (chain per 06 §2). FAIL if any numeral in the answer lacks a value ref.
-2. **Numeral lint:** a test template containing a bare hardcoded "$1.2M" fails the build lint; at runtime, a composed answer with an unresolvable figure ref renders `RefusalCard`, never partial prose with the figure inlined (04 §2.1).
-3. **Refusal names the missing:** Ask "what did we send the lender for Q2?" with Q2 in-review → refusal reads "I don't have a certified Q2 package to answer from" + link to the Q2 period + the grounded alternate (certified Q1). Zero generated figures in the refusal.
-4. **Selection travels with provenance:** highlight "89.04%" in the Review Room → Ask opens with the selection chip carrying the occupancy TestResult ref; the answer's citations resolve to the same chain (unit dedup 322→301 visible in the chain per 06 §4).
-5. **Vocabulary law:** the Bexley occupancy finding renders verdict SHORTFALL with `basis_echo=monitored`; the string "breach" is unreachable in any agent template for monitored rows (type-level test, 05 §3).
-6. **Canon finding:** with a DSCR-class test in watch band, the finding card renders the consequence sentence in the canon shape "you are $240K of NOI from a DSCR shortfall" with both figures as engine refs, a drafted mitigant narrative attached, and disposition as a typed act writing an ActivityEvent.
-7. **Blocking finding gates review:** a shortfall on a covenanted test (Westbrook Flats 1.20x DSCR fixture) in an open period appears as a review stop; readiness stays false until dispositioned.
-8. **Zero re-asks:** run two consecutive Calloway periods with unchanged facts (same PMS, same COA codes, same lender forms) → the agent asks zero questions in period 2 that period 1 answered; every pre-fill renders its MemoryChip with "learned {date} from {who}". Any repeat question = FAIL.
-9. **Memory correction versions:** correct the management-fee memory entry → v2 created, v1 retained in chain, next period pre-fills v2; if the entry fed a certified package field, the void-on-change consequence modal appeared before commit.
-10. **Learning alarm:** seed three tone-class corrections on the same narrative pattern across two cycles → `RepeatErrorMetric` shows the class non-decreasing and enters alarm state (the "misses the same shit every time" test — Terry ruling, memory `covenant-agent-behavior-self-sufficient-proactive.md`); a decreasing class shows the downtrend.
-11. **Quiet log unity:** the same auto-file event renders identically on Home §4 and Loan Detail ACTIVITY (one store, filtered views) — the U3-F2 contradiction class is structurally impossible; row expand shows the Inngest-style two-pane with an Attempt 2 badge on a retried extraction step.
-12. **No-push:** complete an entire autonomous prep cycle (arrival → filed → computed) → zero push notifications emitted; flip a deadline into escalation per policy → exactly one push, linked to the blocking item.
-13. **Scope wall:** in PMC mode, a preparer's Ask about another client's loan refuses on scope with no data in the refusal; a reviewer sees no disposition or correction affordances (hidden, not disabled).
-14. **Capability prompts honest:** every rotating prompt, when tapped, completes against current fixtures (prompts are drawn from the palette's computed-answer set); a prompt whose query cannot complete for the loans in view never renders (locked law).
-15. **Viewports:** 1440/1728/2048/1024-narrow fixture pass — panel float/dock per 08 §9, split minimums honored, no silent compression (narrative-beside-finding stacks to tabs below 1280px).
-16. **Accessibility:** keyboard-only citation walk; screen-reader announcement of lit-row; AA contrast on memory microcopy.
-17. **Benchmark challenger:** reviewer holding R6 confirms the log defaults to root acts (Trigger.dev), the run detail is two-pane (Inngest), corrections are step-anchored with should-have-been (LangSmith), the inspector is provenance-typed (ChatGPT upgraded), and no ambient chrome exists anywhere (anti-Copilot).
+**AGT-00 — Full-period workflow fixture (the agent layer's thread through arrival → sealed record).**
+Run one Calloway quarterly period end to end and assert the agent layer's touchpoints in order:
+1. arrival auto-filed (quiet-logged, no push);
+2. one new COA code triggers a mapping question → answered → `memory.captured` with visible in-flow chip;
+3. computation completes → FindingsService evaluates → zero findings on the clean path (log records the evaluation);
+4. review walk: highlight a figure → grounded Ask with lit citation;
+5. certify + send (human acts, no agent code path invoked — assert structurally);
+6. period seals → Ask over the sealed record quotes exact sealed figures;
+7. next period: the COA mapping pre-fills with its MemoryChip, zero re-ask.
+Every step's ActivityEvent exists, identity-stamped, in one store.
+
+**AGT-01 — Grounded answer with lit-row citation.**
+Given the Calloway FYE-2018 spine computed by the engine, when the user asks "why is NOI $1,218,877?", then the answer quotes the figure as an `AskCitation` carrying the Metric ref; clicking it lights the T-12 NOI grouping row in Evidence and the row STAYS lit (chain per 06 §2). FAIL if any numeral in the answer lacks a value ref, or if the lit row is not the exact source row (the U1-F1 defect class).
+
+**AGT-02 — Numeral lint, build and runtime.**
+Given an agent template containing a bare hardcoded "$1.2M", the CI lint fails the build naming the template and line. Given a composed answer at runtime with one unresolvable figure ref, the whole answer renders as `RefusalCard` — never partial prose with the figure inlined (04 §2.1 fail-closed).
+
+**AGT-03 — Refusal names the missing.**
+Given Q2 in-review (no certification), when asked "what did we send the lender for Q2?", then the refusal reads "I don't have a certified Q2 package to answer from", links the Q2 period, and offers the grounded alternates (certified Q1; Q2's current engine computation, labeled provisional). Zero generated figures anywhere in the refusal.
+
+**AGT-04 — Selection travels with provenance.**
+Given the Review Room rendering Bexley occupancy, when the user highlights "89.04%" and taps "Ask about this", then AskPanel opens carrying the selection chip with the occupancy TestResult ref, and the answer's citations resolve through the same chain (unit dedup 322 rows → 301 units visible in the opened chain, per 06 §4).
+
+**AGT-05 — Vocabulary law is type-enforced.**
+The Bexley occupancy finding renders verdict SHORTFALL with `basis_echo=monitored`. A type-level test proves the string "breach" is unreachable in any agent template when `basis_echo=monitored` (05 §3). Any render path that could print "breach" for a monitored miss = FAIL.
+
+**AGT-06 — The canon finding.**
+Given a DSCR-class test entering its watch band, the finding card renders the consequence sentence in the canon shape — "you are $240K of NOI from a DSCR shortfall" — with both figures as engine refs (signed, dual-denominated), a drafted mitigant narrative attached behind "View drafted narrative", and disposition as a typed act that writes `finding.dispositioned` with who/when/reason.
+
+**AGT-07 — Blocking finding gates review.**
+Given the Westbrook Flats fixture (covenanted 1.20x DSCR) with a shortfall verdict in an open period, the finding appears as a review stop; readiness remains false, the Certify CTA lists it as a linked reason, and dismissal is unavailable while it blocks (the card says why).
+
+**AGT-08 — Zero re-asks (the ask-once acceptance test).**
+Given two consecutive Calloway periods with unchanged facts (same PMS export shape, same COA codes, same lender forms, same signers), when period 2 runs end to end, then the agent asks ZERO questions that period 1 answered; every pre-filled field renders its MemoryChip with "learned {date} from {who}". One repeat question = FAIL of the whole layer.
+
+**AGT-09 — Memory correction versions and cascades.**
+Given a remembered management-fee-line answer (evidence class: the JLL questionnaire's fee-% question), when corrected in the inspector, then v2 is created with v1 retained in the visible chain and next period pre-fills v2. Given the entry's `downstream_refs` include a certified package field, the correction flow states the void-on-change consequence BEFORE commit, and committing voids the certification with the reason recorded (03 §2).
+
+**AGT-10 — The repeat-error alarm.**
+Given three same-class tone corrections on the same narrative pattern across two cycles, `RepeatErrorMetric` shows the class non-decreasing and enters alarm state — the ruled test: "If he misses the same shit every time, we're dead in the water" (memory `covenant-agent-behavior-self-sufficient-proactive.md`). Given a class whose recurrence falls cycle-over-cycle, the metric shows the downtrend. The metric renders in `/settings/agent`, per class, with example links.
+
+**AGT-11 — Quiet log unity (kills U3-F2).**
+Given one auto-filed arrival, the identical event renders on Home §4 and Loan Detail ACTIVITY from the one store (filtered views; a divergence is impossible by construction). Expanding the row opens the two-pane run detail; a retried extraction step shows an "Attempt 2" badge with both attempts comparable (R6: Inngest).
+
+**AGT-12 — No-push.**
+Given a full autonomous prep cycle (arrival → recognized → filed → normalized → computed) completing overnight, zero push notifications are emitted; every act is discoverable in the log. Given a deadline crossing into escalation per org policy, exactly one push fires, deep-linking the blocking item (03 §5 — the one push-eligible class).
+
+**AGT-13 — Scope wall.**
+Given PMC mode with two clients, a preparer's Ask about the other client's loan refuses on scope with zero data leakage in the refusal text; a reviewer sees no disposition or correction affordances anywhere (hidden, not disabled — R6: GitHub).
+
+**AGT-14 — Capability prompts honest by construction.**
+Every rendered prompt, when tapped, completes against current fixtures; unit test: remove a loan's computed TestResults → its dependent prompts drop out of the rotation set the same render (the set derives from the palette's computed-answer grammar, 08 §5).
+
+**AGT-15 — Viewports.**
+1440 / 1728 / 2048 / 1024-narrow fixture pass: panel float/dock per 08 §9; finding-narrative split honors both ≥560px or stacks as labeled tabs; run detail becomes full-width overlay below 1440px; memory inspector collapses provenance columns into row-expand, labeled — no silent compression anywhere.
+
+**AGT-16 — Accessibility.**
+Keyboard-only pass: summon Ask, ask, walk citations, disposition a finding, correct a memory entry — zero pointer use. Screen reader announces the lit-row event and citation boundaries. Contrast audit on memory microcopy and grounding footer against AA.
+
+**AGT-17 — Benchmark challenger review.**
+A reviewer holding R6 confirms: log defaults to root acts with opt-in depth (Trigger.dev); run detail is two-pane (Inngest); minutiae collapse with raw events one level down (Temporal); corrections are step-anchored with captured should-have-been (LangSmith); the inspector is provenance-typed with per-entry control and a master switch (ChatGPT upgraded); and NO ambient agent chrome exists on any surface (anti-Copilot control passes).
 
 ## 18. Build plan
 
-- **Dependencies:** persistence for `memory_entries`, `findings`, `activity_events`, `correction_events` (Supabase migrations; today mostly contract-only — snapshot §3); the F-series engine wiring (TestResults must be real before findings can be); the lit-row contract fix U1-F1 (`cross-cutting/provenance-lit-row-trace.md`) — **Ask does not ship citations until the wrong-row defect is fixed**; the rent-roll canonical reader (F3) for the occupancy finding (blocked honestly until then); the orchestration spine for run traces; tenancy/roles for scope walls.
-- **Foundation work:** (1) the ActivityEvent store + write-path from existing engine/agent code paths — first, because it retires U3-F2 and gives every later feature its audit substrate; (2) the grounding read-layer over engine functions + sealed records (the unwired analyst-grounding substrate is the starting point — snapshot §3); (3) the numeral-lint rule in CI over agent templates.
-- **Components first:** `AskCitation` + `RefusalCard` (the trust primitives) → `QuietLog` re-point of existing feed components onto the one store → `MemoryChip` → `FindingCard`.
-- **Vertical slice (send-vertical pattern):** one loan+period — Bexley Q2 from engine data end to end: FindingsService evaluates the real occupancy TestResult → the 268/301 = 89.04% shortfall finding renders on Home and Loan Detail with a drafted mitigant narrative → highlight the figure in Review → Ask answers grounded with a working lit-row citation → disposition writes the ActivityEvent. One route set, real data, the full agent story in one seam.
-- **Migration from fixture:** AskPanel's scripted golden answer is deleted the day the grounded service answers the same question from engine data (the golden answer becomes acceptance test 1); fixture activity feeds re-point to the store and their arrays are deleted.
-- **Rollout/flag:** `agent.ask.grounded`, `agent.findings`, `agent.memory`, `agent.quietlog` flags per capability; memory ships with the master pause switch ON-able from day one.
-- **Proof artifacts:** screen-capture of the lit-row citation walk on Bexley; the zero-re-asks two-period run log; the no-push cycle log; repeat-error metric screenshot with a seeded downtrend.
-- **Final gate:** ADJUST confirmed for AskPanel/HighlightToAsk only if the grounded service passes tests 1–4; every NEW service passes its acceptance set before the layer claims PASS. Nothing here certifies, sends, or computes a shipping number — verified structurally (no call path), not by review.
+- **Dependencies (named):**
+  - Persistence: migrations for `memory_entries`, `findings`, `activity_events`, `correction_events` (today the persistence layer is mostly contract-only; only `covenant_test_state` has a wired writer — snapshot §3). Tables key to org tenancy; `activity_events` append-only at the database level (no UPDATE/DELETE grants).
+  - Engine wiring: real TestResults from the F-series spine before FindingsService can evaluate anything but fixtures.
+  - The lit-row contract fix (U1-F1, `cross-cutting/provenance-lit-row-trace.md`) — **Ask does not ship citations until the wrong-row defect is fixed**; a citation that lights the wrong row is worse than no citation.
+  - The rent-roll canonical reader (F3) for the flagship occupancy finding — until it lands, that finding class renders its BLOCKED state honestly (gap 7).
+  - The orchestration spine for real run traces (until it exists, run detail renders only the acts that actually execute — never simulated steps).
+  - Tenancy/roles for the scope walls (PMC client scoping; reviewer read-only).
+- **Foundation work, in order:**
+  1. **ActivityEvent store + write path** from every existing engine/agent code path (send gate, trend assembler, intake classifier when wired) — first because it retires the U3-F2 contradiction class structurally and gives every later feature its audit substrate.
+  2. **Grounding read-layer** (`src/lib/covenant/agent/ask.ts`) over engine functions + sealed records + Documents + confirmed values — the unwired analyst-grounding substrate is the starting point (snapshot §3).
+  3. **Numeral lint** in CI over agent templates + the runtime fail-closed gate (pipeline step 6).
+  4. **Memory store + capture/reuse API**, then the inspector; **FindingsService + trigger evaluation**, then the cards.
+- **Components to build first:** `AskCitation` + `RefusalCard` (the trust primitives — everything else quotes through them) → `QuietLog` re-point of existing feed components onto the one store (delete the fixture arrays) → `MemoryChip` → `FindingCard` → `RunDetail` → `MemoryInspector` → `RepeatErrorMetric`.
+- **Vertical slice (the send-vertical pattern, one loan+period end to end):** Bexley Q2 from engine data: FindingsService evaluates the real occupancy TestResult → the 268/301 = 89.04% shortfall finding renders on Home §3 and Loan Detail with a drafted mitigant narrative → the user highlights the figure in Review → Ask answers grounded, with a working lit-row citation into the roll aggregation chain → disposition writes `finding.dispositioned` to the one log. One seam, real data, the entire agent story demonstrable in a single session.
+- **Migration from fixture data:** AskPanel's scripted golden answer is deleted the day the grounded service answers the same question from engine data — the golden answer's content becomes acceptance test AGT-01's expected shape. Fixture activity feeds re-point to the store and their arrays are deleted in the same PR (no dual-source window). The hand-authored `deal_config` continues standing in for extraction until the Extraction brief's flow lands; Ask grounds on whatever confirmed-grade data exists and refuses beyond it — the refusal behavior IS the honest migration state.
+- **Rollout/feature flags:** `agent.ask.grounded` · `agent.findings` · `agent.memory` · `agent.quietlog` · `agent.learning` — independent flags because the capabilities have independent dependencies; quiet log ships first (lowest risk, highest structural payoff), Ask citations ship only after U1-F1.
+- **Proof artifacts required:** screen capture of the full lit-row citation walk on Bexley (highlight → Ask → citation → lit source row held); the two-period zero-re-asks run log; the overnight no-push cycle log with the one deadline-escalation push; repeat-error metric screenshot with a seeded downtrend and a seeded alarm; the type-level vocabulary test output proving "breach" unreachable for monitored rows.
+- **Final gate:** ADJUST confirmed for AskPanel/HighlightToAsk only when the grounded service passes AGT-01 through AGT-04; each NEW service passes its acceptance set before the layer claims PASS. The three prohibitions — never certifies, never sends, never computes a shipping number — are verified structurally (no call path from any module in `src/lib/covenant/agent/` or `src/components/covenant/agent/` to the certify or send gates; a numeral without a value ref cannot compile), not by review promise.

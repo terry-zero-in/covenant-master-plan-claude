@@ -18,7 +18,19 @@ RULED: a working Rent Roll v1 lives FREE inside the Covenant shell; v1+v2 are ch
 
 - Primary job-to-be-done: "show me the current roll for this property, clean and trustworthy, with the totals proven."
 - Decisions made here: which property, which roll (as-of date) — navigation decisions only. No covenant-weight decision lives here.
-- Questions the surface must answer in scan order: (1) which roll am I looking at (property, as-of date, source doc)? (2) is it clean (does it tie to its own summary)? (3) what is occupancy, physically and economically? (4) what is the status mix? (5) what does any single unit look like? (6) where did any number come from?
+- Questions the surface must answer in scan order:
+  1. Which roll am I looking at? (property, as-of date, source doc, version)
+  2. Is it clean? (does it tie to its own summary sheet; how many rows collapsed in dedup)
+  3. What is occupancy — physically, and economically per the reader's definition?
+  4. What is the status mix across the six states?
+  5. What does any single unit look like?
+  6. Where did any number come from? (the lit-row answer, always one click away)
+
+**The identity guard, restated as rules (DIRECTION; enforced by tests T6/T7):**
+1. No covenant verdict, floor, threshold, or verdict vocabulary renders on `/rent-roll` — occupancy-vs-floor comparison is covenant-surface work only.
+2. The only bridge to covenant context is the neutral cross-reference chip ("this roll feeds {loan}'s occupancy →").
+3. Resident identifiers never reach this surface's payload, render, or export path (v1 has no export path at all).
+4. No pricing, upgrade, or product-identity chrome — the teaser is a quiet utility inside Covenant's shell, monetized only at v2 (RULED).
 - What the user should not have to decide here: status-label mapping (a pipeline confirmation, remembered per property/PMS — 05 §2.1); COA anything; whether occupancy passes any floor (that judgment belongs to covenant surfaces only — identity guard, §below); which roll version is canonical (Documents owns versions; this view renders the current filed version and links its chain).
 - Entry paths: rail item `Rent Roll` (08 §3 proposal — quiet, no badge); command palette Places result ("Rent Roll — {property}"); Documents register row for a filed roll ("view normalized"); the cross-reference chip on covenant surfaces ("occupancy source: {roll as-of}" links here); Loan Detail PROPERTIES tab property card.
 - Exit paths: source-doc link → DocView (`/documents/[docId]`); "this roll feeds {loan}'s occupancy" cross-reference → that loan's covenant surface (`/covenant/[loanId]/[period]/actuals`); breadcrumb → book floors.
@@ -44,7 +56,12 @@ No-double-homing boundary, stated: Intake owns arrival decisions; Documents owns
 - Source facts: the PMS detail export — 24 columns, 322 lease rows over 301 units, per-row unit status, plus the roll's own summary sheets (floorplan mix, status totals) (evidence: SLOT-2; 05 §2.1). Original bytes immutable in Documents; grain: document.
 - Extracted values awaiting confirmation: unknown status labels the first time a PMS's vocabulary appears; missing SQFT/rent cells; duplicate-unit suspicion (05 §2.1 exception classes). Rendered here as flags; confirmed in the pipeline's exception card.
 - Confirmed values: status mappings (property/PMS-scope MemoryEntry, versioned); grain: property.
-- Deterministic outputs (the reader, F3): row parse → unit dedup (322 rows → 301 units; future-lease dual rows collapse — the 301 ≠ 322 rule, 06 chain C) → status normalization onto the roll's own six-state taxonomy (Occupied-no-NTV / Occupied-NTV / Occupied-NTV-Leased / Vacant-Leased / Admin-Down / Vacant-Not-Leased) → aggregates: status counts (259/18/2/13/2/7 on the evidence roll), physical occupancy 279/301 = 92.69%, economic aggregates per the reader's documented definition (definition text summonable beside the figure; the definition is the reader spec's, never this brief's invention) → summary tie-out: row-derived totals vs the roll's own summary sheet (301 ✓ on the evidence roll; any disagreement flags).
+- Deterministic outputs (the reader, F3), in pipeline order:
+  1. Row parse of the 24-column detail export (row-class: lease row vs summary vs header).
+  2. Unit dedup: 322 rows → 301 units; future-lease dual rows collapse onto their unit with both leases retained as children (the 301 ≠ 322 rule, 06 chain C). The collapse is a ledger, not a deletion — every collapsed row stays addressable.
+  3. Status normalization onto the roll's own six-state taxonomy: Occupied-no-NTV / Occupied-NTV / Occupied-NTV-Leased / Vacant-Leased / Admin-Down / Vacant-Not-Leased (evidence: SLOT-2).
+  4. Aggregates: status counts (259/18/2/13/2/7 on the evidence roll); physical occupancy 279/301 = 92.69% as of 04/30/2018; economic aggregates per the reader's documented definition (definition text summonable beside the figure; the definition belongs to the reader spec and the loan's own documents — never this brief's invention); floorplan mix rollups.
+  5. Summary tie-out: row-derived totals cross-checked against the roll's own summary sheets (301 ✓ on the evidence roll; any disagreement flags and blocks occupancy consumers fail-closed).
 - Agent proposals/drafts: proposed status mappings with confidence; anomaly notes vs the prior roll (unit-count change, status-mix jump) — quiet observations, not findings with dispositions (findings live on covenant surfaces).
 - Human decisions: none owned here (see §3).
 - Certified values: none originate here. Where a roll feeds a certified package, the certified linkage renders as a downstream-use note ("feeds {loan} {period} — certified {date}"), and replacing that roll triggers the void machinery on the owning surfaces (03 §2), never silently.
@@ -70,7 +87,9 @@ Grain map: organization → client → property (the pivot grain here) → docum
 | watch/shortfall/breach | **Never rendered here.** Occupancy-vs-floor comparison renders ONLY on covenant surfaces (DIRECTION identity guard). The word "shortfall"/"breach"/"pass"/"watch" never appears on `/rent-roll` | — | — | — | Acceptance test §17-T6 |
 | permission-denied | Client-scope or role denies | Standard denied state; no data shape leaks | — | — | — |
 | read-only | Reviewer role; also every historical roll version | Full render, zero mutation affordances | — | — | — |
-| blocked/gated | Reader cannot process the PMS format at all | Fail-closed block naming what's missing ("unrecognized roll format — {n} columns expected 24-column detail export shape is not required; the reader's format registry names the gap"); never a guessed table | Engine blocks; pipeline authoring resolves | Yes | ActivityEvent |
+| blocked/gated | Reader cannot process the PMS format at all | Fail-closed block naming exactly what is missing ("unrecognized roll format — the reader's format registry does not match these columns"); never a guessed table; manual authoring path offered per the fail-closed law | Engine blocks; pipeline authoring resolves | Yes | ActivityEvent |
+| unrecognized property | A roll arrives that matches no known property | Never reaches this surface — it sits in the Intake queue as an arrival decision; this surface links "1 roll awaiting routing" only as a quiet note when the org has one | Human (Intake decision) | Yes | Intake decision record |
+| duplicate arrival | The same roll bytes re-filed | Suppressed upstream by content hash (04 §1 arrival row); a changed-bytes re-send becomes a version, not a duplicate | Engine | — | Suppression quiet-logged |
 | certified (void-on-change) | N/A as an origin state; downstream-use note renders where a roll feeds a certified package | Replacing that roll → void event on the owning package surface; this view shows "superseded — fed a certified package, see void notice" | Engine | Void is not reversible; re-certify is a fresh act | Void event |
 | sent/sealed | N/A here; sealed packages that consumed this roll list under downstream uses (link to Reports) | — | — | — | — |
 | recovery/undo | Switching roll versions is always reversible; nothing destructive exists on this surface by design — there is nothing to undo because there is nothing to do | — | — | — | — |
@@ -101,7 +120,20 @@ Absent by design: covenant verdicts and floors (identity guard); charts (a statu
 
 - **Region A — roll identity band** (persistent, full width, ~56px): property picker (type-ahead over properties with filed rolls), roll/as-of selector (versions), provenance line ("Recreated from {PMS} export · filed {date} via intake · source ↗"), tie-out chip, dedup chip. Interaction: chips expand inline popovers (tie-out shows both totals + delta; dedup lists the 21 collapsed dual rows with their unit pairs). Why not a pane: identity is orientation, not work.
 - **Region B — occupancy summary** (pinned, ~120px, open ground): six status-count figures in a single row (each count clickable → filters the unit table to that status, and lights its source aggregation in Evidence), then physical occupancy ("279 / 301 = 92.69% · as of 04/30/2018" on the evidence fixture) and the economic aggregate, each with the dotted provenance underline and a summonable definition note. A quiet cross-reference chip when loans consume this roll: "feeds {Bexley}'s occupancy →" — a link, never a verdict (DIRECTION).
-- **Region C — unit table** (primary work window, fills remaining height): uniform-row grid, one row per deduped unit: unit, floorplan, SQFT, status (normalized label + source label on hover), lease start/end, market rent vs lease rent, charges rollup. Columns are a projection of the 24 source columns; **resident-identifier columns are omitted by design** — they exist in the Structured reading artifact in Documents for those with rights, but the teaser never renders them (resident-data law, kit law: resident-level data never travels outward; this surface removes even the inward temptation). Dual-row units carry a small "2 rows" marker that expands the pre-dedup source rows.
+- **Region C — unit table** (primary work window, fills remaining height): uniform-row grid, one row per deduped unit. The rendered column set is a fixed projection of the 24 source columns (DIRECTION anatomy):
+
+| Rendered column | Content | Treatment |
+|---|---|---|
+| Unit | Unit identifier | Mono; the row anchor; dual-row units carry a "2 rows" marker that expands the pre-dedup source rows |
+| Floorplan | Plan code | Links its floorplan-mix row (Region D) |
+| SQFT | Square footage | Mono, right-aligned; missing → em-dash + low-confidence flag, never 0 |
+| Status | Normalized six-state label | Text label always; source PMS label + mapping provenance on hover |
+| Lease dates | Current-lease start / end | Future lease renders as the child row under its unit, never a second unit |
+| Market rent | Per the roll's market-rent column | Mono, right-aligned |
+| Lease rent | Per the roll's lease-rent column | Mono, right-aligned; the market-vs-lease pair drives the economic aggregates |
+| Charges | Rollup of the roll's charge columns | Single rolled figure; expands inline to the source charge breakdown |
+
+  **Resident-identifier columns are omitted by design** — they exist in the Structured reading artifact in Documents for those with rights, but the teaser never renders them (resident-data law: resident-level data never travels outward; this surface removes even the inward temptation, and no column picker can summon them).
 - **Region D — floorplan mix table** (secondary, below C; becomes a tab below 1728px): floorplan, unit count, avg SQFT, avg market rent, avg lease rent, occupancy by plan — tied to the roll's own mix summary sheet, discrepancies flagged like Region B.
 - **Region E — Evidence panel** (summonable, right, 360–420px): the lit-row trace (06 §1). Click any figure/row → exact source sheet region lights and stays lit. Opens beside, never a modal (lit-row law). Esc dismisses.
 
@@ -116,16 +148,21 @@ Pane-model compliance: one big pane (C) + view switching (D as tab at narrow wid
 | Unit row | Its pre-dedup source rows | On demand | Understand the 322→301 collapse | Inline expansion under the row | Same |
 | Normalized roll | Original document bytes | No | Deeper audit | Link to DocView (navigation, with return path) | — |
 | This roll | The prior roll | No in v1 | Roll-over-roll change (v2 scope) | Not built in v1; version switch only | — |
+| Unit table row | Its floorplan-mix row | No | Plan-level context | Floorplan cell links to Region D (scroll/tab focus) | — |
 | Occupancy figure | Any covenant floor | **NEVER on this surface** | — (identity guard) | Cross-reference chip navigates to the covenant surface | — |
 
 No pane exists merely because information exists: the floorplan mix demotes to a tab rather than forcing a second pane.
 
 ## 10. Layouts and viewport behavior
 
-- 1440px: rail 240px (or user-collapsed 48px) → work area ~1200px. Regions A/B full width; C full width (~1200px, 8–9 columns comfortable); D below C; Evidence summons as a right overlay 400px over C (C does not reflow; the lit row scrolls into view).
-- 1728px: work area ~1488px. Evidence docks as a true side pane: C 1028px + E 420px + gutters; D still below. Both C and E exceed their minimums (C ≥ 720px primary-window law, E ≥ 360px).
-- 2048px: work area ~1808px. C 1200px + E 480px; D can sit beside C's lower half if the user pins it — still within the interior-inspector allowance, not a third work window.
-- Narrow/compact (<1280px): icon rail 48px; A compresses to two lines; B wraps to 2×3 counts + occupancy line; C horizontal-scrolls inside its own container (page body never scrolls sideways); D and E become labeled tabs/overlay sheets — no silent compression (08 §9).
+| Viewport | Rail | Work area | Topology (ratios) | Evidence panel |
+|---|---|---|---|---|
+| 1440px | 240px (or user-collapsed 48px) | ~1200px | A/B full width; C full width; D below C | Overlays right at 400px; C does not reflow; lit row auto-scrolls into view |
+| 1728px | 240–280px | ~1488px | C 1028px + E 420px + gutters (69/28 split); D below | Docked side pane |
+| 2048px | 280px | ~1808px | C 1200px + E 480px; D may pin beside C's lower half (interior inspector, not a third work window) | Docked, wider trace text |
+| <1280px | icon rail 48px | remainder | A compresses to two lines; B wraps 2×3 + occupancy line; C horizontal-scrolls inside its own container (body never scrolls sideways) | Labeled tab / overlay sheet — no silent compression (08 §9) |
+
+- Minimums honored at every step: C ≥ 720px (primary-window law), E ≥ 360px, or the pane demotes to a labeled tab.
 - Focus behavior: selecting a unit row pins it; summoning Evidence keeps the selection lit.
 - Compare behavior: none in v1 (roll-over-roll compare is v2 — stated, not stubbed).
 - Proof/source behavior: lit-row per §8-E at every width; below 1440 the Evidence sheet overlays from the right and the lit region auto-scrolls.
@@ -135,8 +172,16 @@ No pane exists merely because information exists: the floorplan mix demotes to a
 ## 11. Components and exact anatomy
 
 - `CovenantShell` — REUSE (mounts the route; rail item added per 08 §3).
-- `RollIdentityBand` — NEW: `PropertyPicker` (type-ahead; reuse the palette's object-row rendering), `RollVersionSelector` (reuse period-selector popover pattern from the breadcrumb spec, 08 §2), `ProvenanceLine`, `TieOutChip` (states: clean / failed / running; expands popover with both totals), `DedupChip` ("322 rows → 301 units"; expands the collapsed-row ledger).
-- `OccupancySummaryBlock` — NEW: six `StatusCountFigure` atoms (count + normalized label; click filters + lights), `OccupancyFigure` (numerator/denominator/percent in Geist Mono `tabular-nums slashed-zero`), `DefinitionNote` (summonable, quotes the reader's definition text verbatim).
+- `RollIdentityBand` — NEW. Parts:
+  - `PropertyPicker` — type-ahead over properties with filed rolls; reuses the palette's object-row rendering (loan/period identity chips per 08 §5).
+  - `RollVersionSelector` — reuses the period-selector popover pattern from the breadcrumb spec (08 §2): version list with filed dates and status dots.
+  - `ProvenanceLine` — "Recreated from {PMS} export · filed {date} via intake · source ↗"; the derivative label is mandatory (document-artifacts law).
+  - `TieOutChip` — states clean / failed / running; popover shows row-derived total, summary-sheet total, delta.
+  - `DedupChip` — "322 rows → 301 units"; popover lists the collapsed-row ledger (the 21 dual rows on the evidence fixture) with unit links.
+- `OccupancySummaryBlock` — NEW. Parts:
+  - six `StatusCountFigure` atoms — count + normalized label; click filters Region C to that status and lights the aggregation in Evidence.
+  - `OccupancyFigure` — numerator / denominator / percent in Geist Mono `tabular-nums slashed-zero`; dotted provenance underline (inferred-class grammar, 06 §7).
+  - `DefinitionNote` — summonable; quotes the reader's definition text verbatim with its source ref; never paraphrases.
 - Unit table — REUSE the app-wide uniform-row grid primitives (tables/grids cross-cutting system, 07 §1E): uniform row heights, open-not-boxed, virtualized. NEW column set as §8-C. `StatusCell` shows normalized label; hover reveals "source label: {PMS string} · mapped {date}" (memory provenance, 03 §3 grammar).
 - `FloorplanMixTable` — NEW, same grid primitives; each aggregate cell carries provenance refs.
 - Evidence panel — REUSE the review-room Evidence panel component with the repaired lit-row contract (`cross-cutting/provenance-lit-row-trace.md`; fix U1-F1 before this surface adopts it).
@@ -153,7 +198,17 @@ No pane exists merely because information exists: the floorplan mix demotes to a
 - Selection: single row select (click or ↑/↓); selection drives Evidence.
 - Hover: status cells reveal source label + mapping provenance; figures reveal confidence class per the three-actor grammar (06 §7).
 - Focus: full keyboard focus order A → B → C → D → E; visible focus ring from the ruled accent family tokens.
-- Keyboard: `/` focuses the property picker; ↑/↓ rows; Enter opens Evidence for the selected row; `E` toggles Evidence; `1–6` filter by the six statuses (order as the taxonomy renders); `0` clears filters; Esc closes Evidence, then clears selection, then nothing (never navigates as a side effect); `⌘K` palette; G-chords global (08 §5). No new G-chord is claimed for `/rent-roll` in v1 — palette + rail suffice for a quiet utility.
+- Keyboard map:
+
+| Key | Action |
+|---|---|
+| `/` | Focus the property picker |
+| ↑/↓ | Row navigation in the unit table |
+| Enter | Open Evidence for the selected row (lit-row) |
+| `E` | Toggle the Evidence panel |
+| `1–6` | Filter to a status (taxonomy render order); `0` clears |
+| Esc | Close Evidence → clear selection → nothing (never navigates as a side effect) |
+| `⌘K` / G-chords | Palette and global places per 08 §5 — no new G-chord is claimed for `/rent-roll` in v1; palette + rail suffice for a quiet utility |
 - Editing and validation: none — read-only surface; the only mutating affordance is a deep link out to the pipeline's exception card.
 - Bulk action: none in v1.
 - Undo/recovery: nothing destructive exists; version switching is freely reversible.
@@ -171,7 +226,8 @@ No pane exists merely because information exists: the floorplan mix demotes to a
 - Density: default comfortable; a compact toggle obeys the app-wide density setting (Settings → Appearance), uniform row heights preserved in both.
 - Open ground vs earned boundaries: open-not-boxed tables (locked law); the occupancy summary sits on open ground separated by whitespace, not cards; the only hairlines are the table header rule and the Evidence panel seam, from the gray ladder.
 - Dividers/elevation: Evidence panel earns the one elevation step (same treatment as the review room's panel); popovers use the standard raised surface from the adopted ladder.
-- Semantic color: status counts are neutral (gray-ladder text) — status is taxonomy, not severity; the ONLY accent-family use is interaction (selected row, focus, lit-row highlight per the Evidence panel's existing treatment); tie-out failed state uses the app's standard exception treatment, not a new color. Zero new colors proposed (settled law).
+- Semantic color: status counts are neutral (gray-ladder text) — status is taxonomy, not severity; the ONLY accent-family use is interaction (selected row #7189FF family: hover #8EA1FF, active #6078F4, focus/lit-row highlight per the Evidence panel's existing treatment); tie-out failed state uses the app's standard exception treatment, not a new color. Zero new colors proposed (settled law).
+- Three-actor badge grammar at point of use (06 §7): reader outputs render as inferred (dotted provenance underline; confirmer stamp on hover once mappings are confirmed); source values render document-native inside Evidence; nothing on this surface ever wears the certified paper treatment.
 - Certified sheet treatment: not touched here — this surface never renders the certified paper; downstream-use notes are plain links.
 - Focus/selected/hover: consume the existing Covenant control-layer tokens (Ruling-J measurement: the control layer exists; consume, never restyle).
 - Chart style: no charts in v1 (doctrine: the mix table out-encodes any bar of six counts; a chart that cannot out-encode adjacent text does not ship).
@@ -188,12 +244,13 @@ No pane exists merely because information exists: the floorplan mix demotes to a
 | Box | Version mechanics | https://support.box.com/hc/en-us/articles/360043697054-Accessing-Version-History (R2 research) | Version stack under one identity; promote/inspect without forks | `NewerRollBar` + version selector over the Documents version chain | Filename-collision version inference | The simplest proven version-stack UX; Covenant adds the explicit typed filing question upstream (Documents brief) |
 | Attio | Register/record projection | https://attio.com/help/reference/managing-your-data/views/create-and-manage-table-views (R5 research) | Saved table views; table and record page as two projections of one object | Property/roll register + normalized roll view are two projections of the reader's one output; shared SavedView mechanism | User-editable schema | Cleanest object→view model among register donors |
 | Mercury | Calm register | https://support.mercury.com/hc/en-us/articles/38790547830036 (R5 research) | Header stats bound to the active filter; quick/advanced filter split | Whole-roll aggregates stay pinned with an explicit "filtered view" note — the deliberate inverse, chosen so denominators never silently shrink | Keyword-first navigation | Its stat-filter binding is the pattern we must consciously invert for occupancy denominators, and naming that choice prevents a subtle integrity bug |
+| Rossum | Proposal-state grammar | https://rossum.ai/help/faq/bounding-box/ (R2 research) | The proposed-vs-human-validated visual state machine with hoverable provenance | The status cell's hover provenance ("source label → normalized label, mapped {date}") reuses the same proposed/confirmed grammar the pipeline surfaces use | Auto-export past humans | Keeps the teaser's provenance grammar identical to the confirmation surfaces' — one language app-wide |
 
 Synthesis: the composed surface is a provenance-first normalized register — ABBYY's derivative honesty on the label, Instabase/Hebbia's grounding on every figure, Box's version stack, Attio's projection discipline — pointed at a domain object none of these products has: the multifamily rent roll with its dual-row future leases and six-state taxonomy. Originality and domain correctness come from the evidence kit itself: the surface is designed around the exact failure modes of the real export (322 ≠ 301; roll-vs-summary disagreement; alien status labels), and around the borrower-side law that this data feeds lender reporting but never renders a lender verdict here.
 
 ## 15. Domain references
 
-Domain semantics (terminology, expected columns, status vocabularies) come from PMS detail exports of the evidence kit's shape and from the servicer's own occupancy asks (the JLL questionnaire's month-end occupancy fields — evidence: SLOT-5), plus Finley-class deliverable-tracking products (R5 research: Finley) for how borrower-side reporting products name things. Domain authority does not equal visual authority: none of these dictates a pixel. Occupancy definitions (denominator, Admin/Down treatment, physical vs economic) are per-loan questions pinned on RequirementRecords (05 §7.3) — covenant semantics come from the loan documents and Terry, never from any referenced product.
+Domain semantics (terminology, expected columns, status vocabularies) come from PMS detail exports of the evidence kit's shape and from the servicer's own occupancy asks (the JLL questionnaire's month-end occupancy fields — evidence: SLOT-5), plus Finley-class deliverable-tracking products (R5 research: Finley) for how borrower-side reporting products name things. Status vocabularies differ per PMS — the six-state taxonomy in this brief is the evidence roll's own, and the reader's mapping layer (ask-once per property/PMS) is the mechanism that absorbs other vendors' vocabularies without this brief pretending to enumerate them (domain-content firewall). Domain authority does not equal visual authority: none of these dictates a pixel. Occupancy definitions (denominator, Admin/Down treatment, physical vs economic) are per-loan questions pinned on RequirementRecords (05 §7.3) — covenant semantics come from the loan documents and Terry, never from any referenced product.
 
 ## 16. Accessibility, performance, and safety
 
@@ -224,15 +281,22 @@ Fixtures: `CAL-roll-2018-04-30` (the Calloway Park SLOT-2 evidence roll: 24 colu
 - T9 (keyboard): full pass of §12 with rail collapsed; `1–6` filters match taxonomy order; Esc order (Evidence → selection → nothing).
 - T10 (versions): filing a second roll version shows `NewerRollBar`; switching is instant and reversible; the superseded view stays addressable; downstream certified-package note renders where wired.
 - T11 (no pricing UI): route-level assertion that no upgrade/pricing/upsell component renders (RULED v1 boundary).
-- T12 (benchmark challenger): reviewer walks the Instabase cell-grounding bar and the Hebbia peek pattern against T3; failure on either returns the build to ADJUST.
+- T12 (empty and awaiting states): an org with zero filed rolls renders the empty state with the read-only intake-address line; a property whose checklist expects a roll renders awaiting-documents with the chase status summarized from Intake (link, not ownership).
+- T13 (permission and scope): a PMC preparer sees only their Client's properties; a reviewer sees the full render with zero mutation affordances; a denied scope renders the standard denied state with no data-shape leak.
+- T14 (accessibility): axe-clean at all four viewports; the T6 figure and T1 aggregates readable by screen reader with provenance descriptions; status never color-only.
+- T15 (benchmark challenger): reviewer walks the Instabase cell-grounding bar and the Hebbia peek pattern against T3; failure on either returns the build to ADJUST.
 
 ## 18. Build plan
 
-- Dependencies: **F3 rent-roll canonical reader** (the load-bearing dependency — dedup, taxonomy, aggregates, tie-out; its acceptance tests come from the SLOT-2 evidence per 06 §4); F1/V2 intake pipeline (arrival path — no separate intake is built for rolls); F2 persistence (property/document/version tables); Documents filing (canon home); the repaired lit-row trace (`cross-cutting/provenance-lit-row-trace.md`).
-- Foundation work: reader output schema + the read API this view and the Actuals REGION 3 both consume (one reader, two renders); rail item added behind the flag (08 §3).
-- Components first: `RollIdentityBand` (with `TieOutChip`/`DedupChip`), `OccupancySummaryBlock`, the unit-table column set on the shared grid primitives.
+- Dependencies, named: **F3 rent-roll canonical reader** (the load-bearing dependency — dedup, taxonomy, aggregates, tie-out; its acceptance tests come from the SLOT-2 evidence per 06 §4); F1/V2 intake pipeline (arrival path — no separate intake is built for rolls); F2 persistence and tenancy (property/document/version tables, Client scoping); Documents filing (canon home); the repaired lit-row trace (`cross-cutting/provenance-lit-row-trace.md` — U1-F1 fix is a hard predecessor).
+- Foundation work, in order:
+  1. Reader output schema + the read API this view and the Actuals REGION 3 both consume (one reader, two renders — the structural guarantee behind §3's no-double-homing claim).
+  2. Route scaffold in the `(covenant)` group mounting `CovenantShell` (components land in `src/components/covenant/rent-roll/`; reader in `src/lib/covenant/`; tokens consumed from `src/styles/covenant-tokens.css` — build-target law).
+  3. Rail item behind the flag (08 §3).
+- Components first: `RollIdentityBand` (with `TieOutChip`/`DedupChip`), `OccupancySummaryBlock`, the unit-table column set on the shared grid primitives — in that order, because the identity band's tie-out/dedup chips are the surface's trust spine.
 - Vertical slice (the send-vertical pattern): one route, one property, engine data end to end — file `CAL-roll-2018-04-30` → reader → `/rent-roll` renders T1 with live lit-row Evidence. No fixture strings anywhere in the slice.
 - Migration from fixture data: none to migrate (surface is net-new); the Bexley canon occupancy remains a book.ts fixture only until the reader supersedes it on covenant surfaces.
 - Rollout/feature flag: `rentRollTeaser` flag gates the rail item and route; ships when T1–T7 pass; the v2 monetization boundary is a plan note, not product chrome (RULED).
-- Proof artifacts: T1 screenshot set at all four viewports; the T3 lit-row screen recording; the T6 copy-scan report.
-- Final gate: `PASS` when T1–T12 green; any tie-out or identity-guard failure is an automatic `ADJUST` return.
+- Proof artifacts required: T1 screenshot set at all four viewports; the T3 lit-row screen recording; the T6 copy-scan report; the T7 schema-level payload assertion in CI; the reader's SLOT-2 acceptance-test run output (322→301, 259/18/2/13/2/7, 92.69%, tie 301 ✓).
+- Occupancy-resolver handshake: when this slice ships, the engine's occupancy resolver unblocks on the same reader output (gap 7); the covenant surfaces' occupancy figures and this surface's figures must be byte-identical reads of one output — a shared integration test pins it.
+- Final gate: `PASS` when T1–T15 green; any tie-out or identity-guard failure is an automatic `ADJUST` return.

@@ -9,9 +9,17 @@
 - **Existing-surface verdict:** `UNBUILT`.
 - **Research tier:** C (deep benchmark synthesis, R2).
 - **Primary users/roles:** owner and PMC preparer (both hold confirm rights by default — 02 §4); reviewer role is read-only.
-- **Frequency and session duration:** once per loan at onboarding — a 30–90 minute full pass over the executed agreement + riders; thereafter near-zero (amendments re-open affected records only; per-period exceptions are seconds each inside Actuals/Review).
+- **Frequency and session duration:**
+  - once per loan at onboarding — a 30–90 minute full pass over the executed agreement + riders (the Enter-walk is designed for exactly this session);
+  - thereafter near-zero: amendments re-open affected records only, and per-period exceptions are seconds each inside Actuals/Review;
+  - no deadline pressure at setup itself, but everything downstream inherits its accuracy — the pressure is correctness, not clock.
 - **Error cost:** one tier above the terminal error. A mis-confirmed requirement propagates into every period's checklist, every test definition, and every composed package for the life of the loan. A wrongly confirmed due-rule makes packages late; a wrongly confirmed threshold makes every verdict wrong before certification is even reachable.
-- **Success criterion:** exactly one full human confirmation per loan (Gate 1); every confirmed record carries a verbatim definition quote + source region (or an explicit no-source declaration for self-authored monitored thresholds); zero re-confirmation prompts across consecutive periods with unchanged facts (03 §3 acceptance); a rider-carrying loan's checklist differs from its base-form sibling exactly where the rider says so (evidence: Form 6241, 06 §3).
+- **Success criterion:**
+  - exactly one full human confirmation per loan (Gate 1), completed as a keyboard flow, not a form slog;
+  - every confirmed record carries a verbatim definition quote + source region (or an explicit no-source declaration for self-authored monitored thresholds);
+  - zero re-confirmation prompts across consecutive periods with unchanged facts (03 §3 acceptance test);
+  - a rider-carrying loan's checklist differs from its base-form sibling exactly where the rider says so (evidence: Form 6241 adds the annual ENERGY STAR report — 06 §3);
+  - an unrecognized document never produces a schedule — it produces a blocked card and a manual-authoring path.
 
 ## 2. User job and decisions
 
@@ -28,8 +36,16 @@
   4. What does confirming/correcting this move downstream?
   5. What is blocked, and why — honestly?
 - **What the user should not have to decide here:** verdicts (none render here); package composition; which periods exist (the engine materializes cadence occurrences after confirmation — 03 §5); anything already confirmed (ask-once); anything a remembered MemoryEntry already answers (rendered beside the field with "learned {date} from {who}" — 03 §3).
-- **Entry paths:** Loan Detail → "Complete setup" (loans in `setup needed` state, per onboarding arc); Home your-move "Extraction exceptions" group; Inbox extraction rows; onboarding step 2 magic path (first loan); ⌘K palette ("setup {loan}"); amendment re-open notification → deep link.
-- **Exit paths:** setup complete → Loan Detail SCHEDULE tab (read-only confirmed schedule); first period opens with its materialized checklist (Intake/Holding); per-period exception cards return to their host surface (Actuals/Review) on disposition.
+- **Entry paths:**
+  - Loan Detail → "Complete setup" (loans in `setup needed` state, per the onboarding arc);
+  - Home your-move "Extraction exceptions" group and Inbox extraction rows (deep links carrying loan identity);
+  - onboarding step 2, the magic path — the first loan's documents produce this surface as the first extraction experience;
+  - ⌘K palette ("setup {loan}");
+  - amendment re-open notification → deep link to the affected records.
+- **Exit paths:**
+  - setup complete → Loan Detail SCHEDULE tab (the read-only confirmed schedule);
+  - first period opens with its materialized checklist (Intake/Holding);
+  - per-period exception cards return to their host surface (Actuals/Review) on disposition, scroll position kept.
 - **Completion/advancement conditions:** all proposed records dispositioned (confirmed/corrected/authored; unreadable records block completion until resolved or explicitly waived-with-reason by a role holding confirm rights) → RequirementRecord set flips confirmed → checklists materialize → periods can open (02 §2 ChecklistItem is derived from RequirementRecords). Period-over-period: Gate 1 completion for a period requires zero open extraction exceptions (03 §2).
 
 ## 3. Object and ownership model
@@ -51,7 +67,16 @@
 ## 4. Data and semantic model
 
 - **Source facts:** the filed loan documents — executed agreement, riders, amendments (evidence: SLOT-3, Fannie Mae Form 6001.NR + Form 6220 + Form 6241, executed 2017). Original bytes immutable + hash; flattened scans render via the Recreated-searchable derivative, always labeled (06 §8).
-- **Extracted values awaiting confirmation:** proposed RequirementRecords per the 05 §1.2 schema — kind, **basis (covenanted | monitored)**, title, `definition_text` verbatim, `definition_source_region` (doc/page/region), optional test {metric_ref, comparator, threshold, calculation_notes_source_region}, optional watch band (authoring default floor × 1.05 — [VERIFY against library; never hard-code], 05 §1.2), cadence + due-rule (e.g. "Q+45d", "FYE+120d"), optional deliverable {doc_type, named_fields[]}, confidence 0–1. Plus proposed loan-term ExtractedValues, each with source region + confidence.
+- **Extracted values awaiting confirmation:** proposed RequirementRecords per the 05 §1.2 schema —
+  - kind (financial-covenant / operational-covenant / reporting-obligation / monitored-threshold / one-time / conditional);
+  - **basis: covenanted | monitored — a stored structural field, never derived at render time (C-9)**;
+  - title + `definition_text` verbatim + `definition_source_region` (doc/page/region);
+  - optional test {metric_ref, comparator, threshold, calculation_notes_source_region} — present only when the agreement defines one;
+  - optional watch band (authoring default floor × 1.05 — [VERIFY against library; never hard-code], 05 §1.2);
+  - cadence + due-rule (e.g. "Q+45d", "FYE+120d" — evidence class);
+  - optional deliverable {doc_type, named_fields[]};
+  - confidence 0–1;
+  plus proposed loan-term ExtractedValues, each with source region + confidence.
 - **Confirmed values:** the same records with `status: confirmed (who, when)`; confirmed term values feeding the loan master.
 - **Deterministic outputs:** the fail-closed dispatcher's form/rider recognition result; schema validation; conflict detection across documents; the downstream-impact computation (which checklist items/tests/sections a change moves).
 - **Agent proposals/drafts:** the extraction pass itself (every proposal carries a source region — 04 §1 row 3); re-open proposals on amendment; conflict explanations.
@@ -60,7 +85,10 @@
 - **Versions/periods/packages:** records version by amendment; sealed periods pin the requirement version they consumed (seal-not-wipe: a sealed period forever cites the version in force when it certified).
 - **Evidence/provenance:** the full 06 §1 chain per record: extraction logic + extractor version → source region → document identity/version/artifact → loan identity → confirmation/correction history with downstream impact.
 - **Permissions/read-only projections:** reviewer role sees cards with states but disabled actions ("confirm rights required"); PMC preparers scoped per client (02 §1).
-- **Grain:** organization → client → loan (this surface is loan-grain; property enters only via pledge context in the header) → document → requirement → version. Periods appear only in the exception projection.
+- **Grain:** organization → client → loan → document → requirement → version. This surface is loan-grain:
+  - property enters only as pledge context in the header (a cross-collateralized loan's setup shows its pledged properties as identity, not as work);
+  - sponsor enters only where a guarantor-statement obligation names one (evidence class: 6001.NR §8.02(b)(2) guarantor statements — 02 §2);
+  - reporting periods appear only in the exception projection; packages, sections, certification records, and send records never render here (downstream identities the impact strip may *name*, never show).
 
 ## 5. State machine and exceptions
 
@@ -104,6 +132,7 @@
 | Correction | Re-validation on edit (R2: Instabase auto-revalidation); downstream-impact computation | Proposes re-grounding when a drawn region changes the value | The correction itself, with reason where it touches certified content | Void warning when a certified field is affected | Correction + impact note |
 | Manual authoring | Schema enforcement; basis lock (a no-source record can only be `monitored`) | Pre-fills from any locatable partial evidence; never fabricates a definition | Authoring act; source pin or explicit no-source declaration | — | AuthoringAct |
 | Amendment | Detects affected records from the amendment's regions; re-opens only those | Proposes the per-record diff (v1 → v2) | Accept/correct each re-opened record | Amendment touching a certified period's inputs → void path | Re-open + resolution |
+| Conflict resolution | Cross-source detection (agreement vs servicer statement vs workbook values) | Explains both chains side by side | Pick-with-reason (typed) | Unresolved conflict blocks the field's confirmation | ConflictResolution record |
 | Period-over-period | Confidence thresholds + rule checks decide what surfaces (exception-only) | Frames each exception with its source | Disposition exceptions inside Actuals/Review | Open extraction exception blocks Gate 1 for that period | Zero-exception periods: one summary entry |
 | Memory | Storage integrity, provenance stamps | Pre-fills remembered answers beside fields ("learned {date} from {who}") | Correct a remembered answer (versioned) | — | Every reuse |
 
@@ -119,7 +148,12 @@ Lane invariants per 04 §2: no shipping number originates here; the agent propos
 6. **Actions:** per-card action row (Confirm / Correct / Mark unreadable / Author manually); Enter-walk keyboarding.
 7. **Activity/history:** per-record version history in the drawer; the loan's quiet log linked from the progress header.
 
-**Absent by design:** verdict chips (no pass/watch/shortfall/breach anywhere on this surface); charts; a "Confirm all" bulk button — blind bulk acceptance defeats Gate 1; the Enter-walk makes per-record confirmation fast instead (R2: Rossum). No generic chat box (law 10).
+**Absent by design:**
+- verdict chips — no pass/watch/shortfall/breach renders anywhere on this surface; verdicts belong downstream (law 3);
+- charts — nothing here out-encodes text (chart doctrine);
+- a "Confirm all" bulk button — blind bulk acceptance defeats Gate 1; the Enter-walk makes per-record confirmation fast instead (R2: Rossum);
+- a generic chat box — agent presence here is the proposed extraction beside its source and the remembered answer beside the field, contextual not chrome (law 10);
+- any guessed schedule — where the dispatcher cannot recognize a form, the honest artifact is the blocked card, never a plausible default.
 
 ## 8. Page anatomy and regions
 
@@ -158,7 +192,12 @@ Lane invariants per 04 §2: no shipping number originates here; the agent propos
 
 **Modals:** none for reading or deciding. The only dialog-weight moment is the void-warning confirmation on saving a correction that voids a certification (a typed act with legal consequence — permitted by law 5).
 
-**Exception projection (inside `/actuals` and `/review`):** the same RequirementCard in compact exception form, rendered in the host surface's exception region/stop walk with a "open source" action that summons the 65/35 view as a focused overlay scoped to that record, returning on disposition. No second implementation.
+**Exception projection (period-over-period reuse inside `/actuals` and `/review`):**
+- the same RequirementCard renders in a compact exception form — no second implementation, no styling fork;
+- inside `/covenant/[loanId]/[period]/actuals` it appears in the exceptions region (REGION 1 of that brief) for sub-threshold or rule-failing extraction items surfaced this period;
+- inside `/covenant/[loanId]/[period]/review` it appears as a stop in the exception walk (stale confirmations, amendment-touched records);
+- an "open source" action summons the 65/35 arrangement as a focused overlay scoped to that one record, and disposition returns the user to the host surface with scroll position kept;
+- what may appear here is strictly bounded: only records that are amendment-touched, stale, conflicted, or below the org confidence threshold — a confirmed record with unchanged facts can never re-enter any queue (ask-once, 03 §2 Gate 1).
 
 ## 9. Co-visibility matrix
 
@@ -171,6 +210,8 @@ Lane invariants per 04 §2: no shipping number originates here; the agent propos
 | Blocked card | The unrecognized page | YES | Author manually against the real page | card + page | — |
 | Loan-terms field | Its source region | YES | Term confirmation | same 65/35 | — |
 | Record | Full provenance chain (extractor version, history) | NO — on demand | Audit | summonable drawer in inspector | — |
+| Exception card (in Actuals/Review) | Its source region | YES at act time | Period-exception disposition | focused 65/35 overlay summoned from the host surface | — |
+| Remembered answer (MemoryEntry) | The field it pre-fills | YES | Trust-but-inspect the pre-fill | inline beside the field, "learned {date} from {who}" | — |
 | Setup progress | Everything else | NO — ambient | Pacing | header | — |
 
 No pane exists merely because information exists: the outline, drawer, and impact strip are all interior or summonable.
@@ -179,11 +220,13 @@ No pane exists merely because information exists: the outline, drawer, and impac
 
 Ratios are work-area px (frame rail per 08 §9).
 
-- **1440px:** rail 240 → work 1200. Source 780 / inspector 420. Outline collapsed to toggle. Focus: Enter-walk auto-scrolls both panes.
-- **1728px:** rail 256 → work 1472. Source 952 (incl. 200px persistent outline — the TOC appears) / inspector 520.
-- **2048px:** rail 280 → work 1768. Source 1208 (outline 220px) / inspector capped 560, surplus to the page (page fidelity outranks card width).
-- **1280–1439px:** rail auto-collapses to 48px (08 §9) → work 1232–1391. Split holds: source ≥760 / inspector ≥360.
-- **Narrow/compact (<1280px frame):** inspector becomes a labeled tab ("Records — 3 unconfirmed") over the source pane; confirming from the tab renders the region snapshot above the card (grounding preserved); a banner names the compression. Minimum viable: 1152×720 (frame law); below, spine-surface "larger window required" state.
+- **1440px:** rail 240 → work 1200. Source 780 / inspector 420 (65/35). Outline collapsed to an icon toggle inside the source pane.
+- **1728px:** rail 256 → work 1472. Source 952 — including the 200px persistent outline: the TOC appears at this width (the ruled widening-pane gasp behavior, snapshot §5) — / inspector 520.
+- **2048px:** rail 280 → work 1768. Source 1208 (outline 220px) / inspector capped at 560, surplus going to the page — page fidelity outranks card width.
+- **1280–1439px:** rail auto-collapses to 48px (08 §9) → work 1232–1391. The split holds: source ≥760 / inspector ≥360.
+- **Narrow/compact (<1280px frame):** the inspector becomes a labeled tab ("Records — 3 unconfirmed") stacked over the source pane; confirming from the tab renders the region snapshot above the card so grounding survives the stack; a banner names the compression. Minimum viable: 1152×720 (frame law); below that, the spine-surface "larger window required" state (registers elsewhere stay usable; this surface does not).
+- **Focus behavior:** the Enter-walk auto-scrolls both panes in lockstep; focusing a card always reconciles the lit region; the drawer opens without stealing card focus.
+- **Tab stacking/replacement:** exactly one stacking rule exists (inspector → labeled tab); the outline never stacks — it collapses to its toggle; nothing replaces the source pane, ever.
 - **Compare behavior:** amendment compare is v1 ⇄ v2 inside the card (diff rows), plus the amendment document lit left; Original ⇄ Recreated is a viewer toggle, never a second split (document-modes law). No 50/50 peer compare exists on this surface.
 - **Proof/source behavior:** proof is co-visible by construction; the drawer opens over the inspector's lower half, never covering the current card's header or the lit region.
 - **No silent compression:** every collapse states itself; the split refuses below minimums and tabs instead (law 5).
@@ -244,8 +287,12 @@ Ratios are work-area px (frame rail per 08 §9).
 
 ## 13. Visual craft direction
 
-- **Typography:** UI text per shell scale; verbatim definition quotes render in the document-quote style (distinct from UI copy — the agreement's words must read as the agreement's words); all financial figures and thresholds in Geist Mono `tabular-nums slashed-zero` (settled law).
-- **The proposed→confirmed state machine in ruled tokens (no new colors — law 4).** Rossum's blue-proposed / green-confirmed is taken as a *state machine*, not a palette: **proposed** regions and card stamps use the accent family — region fill from the accent tint token (#A9B5FF) at low opacity, border #7189FF; the currently lit region uses the stronger accent treatment and stays lit; card-side proposed grammar is the ruled inferred-proposed treatment: confidence + dotted provenance underline, never bold-final (06 §7). **Confirmed** drops to quiet neutral: gray-ladder hairline region border, card stamp on a mid gray rung with the confirmer on hover (06 §7 inferred-confirmed grammar). No green exists and none is introduced.
+- **Typography roles:** shell scale for UI chrome; card titles one step up from body; verbatim definition quotes render in a document-quote style visibly distinct from UI copy — the agreement's words must read as the agreement's words; citations ("per §8.02(b)(1)") in the small caption role; all financial figures, thresholds, and due-rules in Geist Mono `tabular-nums slashed-zero` (settled law).
+- **The proposed→confirmed state machine in ruled tokens (no new colors — law 4).** Rossum's blue-proposed / green-confirmed is taken as a *state machine*, not a palette:
+  - **proposed** — region fill from the accent tint token (#A9B5FF) at low opacity, border #7189FF; card-side grammar is the ruled inferred-proposed treatment: confidence + dotted provenance underline, never bold-final (06 §7);
+  - **current-lit** — the stronger accent treatment on the region, and it stays lit until the card changes (law 6);
+  - **confirmed** — drops to quiet neutral: gray-ladder hairline region border, card stamp on a mid gray rung, confirmer + timestamp on hover (06 §7 inferred-confirmed grammar).
+  - No green exists in the ruled system and none is introduced; the calm of a confirmed record is expressed by *withdrawing* accent, not by adding a success color.
 - **Blocked/unreadable:** no invented alarm color — gray-rung emphasis, Lucide icon (`octagon-alert` class from the approved set), explicit text label; the honesty is in the words, not a hue.
 - **Basis badge:** text-first badge (`covenanted` / `monitored`), neutral rung ground, uppercase label treatment; never color-coded by severity — basis is structure, not a verdict.
 - **Spacing/density:** uniform card rhythm; open-not-boxed — cards separated by gray-ladder hairlines and whitespace, not enclosure; confirmed groups compress to single summary rows.
@@ -268,19 +315,34 @@ Ratios are work-area px (frame rail per 08 §9).
 | Ocrolus | Cross-source consistency in lending | ocrolus.com/press/ocrolus-introduces-cross-source-validation-... (R2) | Cross-document corroboration surfaced as findings | The ConflictCard (agreement vs servicer statement vs workbook) | Vendor-managed invisible HITL — confirmations are the customer's auditable acts | The only lending-native cross-source precedent |
 | ANTI-PATTERN — Google Document AI HITL | Boundary marker | docs.cloud.google.com/document-ai/docs/deprecation (R2) | Only the confidence-trigger idea survived | — | A review console detached from the system of record: business-blind, correction-orphaned, deprecated by its own platform | Proves the confirmation surface must BE the product, writing states onto the loan's own records |
 
-**Synthesis.** Every strong precedent converges on the same shape — fields beside the page, page dominant, human act per field — and none of them knows what a covenant is. The original, domain-correct move is what the cards contain: the 05 §1.1 taxonomy as the grouping spine, the **basis badge as structure** (no benchmark distinguishes covenanted from monitored, and that distinction is Covenant's core modeling fact — the evidence loan has *zero* recurring ratio covenants while Westbrook Flats carries a real 1.20x DSCR), verbatim definition quotes as the card body (the agreement's words, not a paraphrase), fail-closed blocked cards where every benchmark would guess, and ask-once as a product law rather than an automation threshold. The result is a validation screen in Rossum's grammar whose vocabulary is the loan agreement's own.
+**Synthesis.** Every strong precedent converges on the same shape — fields beside the page, page dominant, human act per field — and none of them knows what a covenant is. The original, domain-correct move is what the cards contain: the 05 §1.1 taxonomy as the grouping spine, the **basis badge as structure** (no benchmark distinguishes covenanted from monitored, and that distinction is Covenant's core modeling fact — the evidence loan has *zero* recurring ratio covenants while Westbrook Flats carries a real 1.20x DSCR), verbatim definition quotes as the card body (the agreement's words, not a paraphrase), fail-closed blocked cards where every benchmark would guess, and ask-once as a product law rather than an automation threshold.
+
+The period-over-period design is the second original move: where Rossum applies confidence thresholds to decide what a human sees *per document*, Covenant applies the once-per-loan confirmed schedule as the baseline and lets only deltas — amendments, staleness, conflicts, sub-threshold extractions — re-enter any queue. Confirmation is an asset that appreciates, not a task that recurs. The result is a validation screen in Rossum's grammar whose vocabulary is the loan agreement's own and whose lifecycle is borrower-side lender reporting's own.
 
 ## 15. Domain references
 
-Domain truth for terminology, expected structure, and cadence comes from the evidence documents themselves: the Fannie Mae form family (Form 6001.NR base agreement; Form 6220 replacement-reserve waiver; Form 6241 Green Financing rider — evidence: SLOT-3) and the servicer-form layer (JLL questionnaire/certification — evidence: SLOT-4/5-class). Finley-class covenant-tracking products and loan-servicing/agency-compliance tooling are referenced for *terminology and expected data shapes only* (05 domain framing). **Domain authority does not equal visual authority** — none of these products contributes a pixel; and covenant semantics come from each loan's own documents and Terry's rulings, never from any referenced product (law 8: no invented thresholds, tests, or cadences — every instance in this brief is evidence-labeled or canon-labeled).
+Domain truth for terminology, expected structure, and cadence comes from the evidence documents themselves:
+
+- the Fannie Mae form family — Form 6001.NR base agreement, Form 6220 replacement-reserve waiver, Form 6241 Green Financing rider (evidence: SLOT-3) — establishes what a recognized-form library must know: base-form article structure plus rider deltas;
+- the servicer-form layer (JLL quarterly questionnaire and annual certification — evidence: SLOT-4/5-class) establishes what the confirmed schedule must eventually feed;
+- Finley-class covenant-tracking products and loan-servicing/agency-compliance tooling are referenced for *terminology and expected data shapes only* (05 domain framing).
+
+**Domain authority does not equal visual authority** — none of these products contributes a pixel. And covenant semantics come from each loan's own documents and Terry's rulings, never from any referenced product (law 8: no invented thresholds, tests, or cadences — every instance in this brief is evidence-labeled or canon-labeled).
 
 ## 16. Accessibility, performance, and safety
 
-- **WCAG:** accent-tinted region fills maintain ≥3:1 boundary contrast against the page ground; text never renders on the tint below AA; focus ring visible on every interactive element.
-- **Keyboard completeness:** the entire setup pass — including region peek, correction, re-grounding (region picker operable via arrow-key nudge + Enter), authoring, and drawer — completes without a pointer (§12 map; acceptance-tested).
-- **Screen reader:** cards are list items with state announced ("Reporting obligation, covenanted, rent schedule, unconfirmed, confidence high"); confirmation announces the act and the next card; region lighting announces the page + section landed on; the basis badge reads as text, not color.
-- **Large data:** card list virtualized (an agreement + riders can propose dozens of records; the page canvas renders lazily per page); uniform row heights (law 11).
-- **Loading/latency:** staged extraction progress with real stage names; per-card acts optimistic with server confirm; failures surface on the card, never silently drop an act.
+- **WCAG contrast and focus:**
+  - accent-tinted region fills maintain ≥3:1 boundary contrast against the page ground; document text never renders under a tint that drops it below AA;
+  - the focus ring is visible on every interactive element, including region highlights on the page canvas;
+  - state is never carried by color alone — every region state has a border-style + stamp-text counterpart (verified per the oklch caution by canvas readback, not eyeball — snapshot §4).
+- **Keyboard completeness:** the entire setup pass — card navigation, confirm, correct, re-grounding (the region picker operates via arrow-key nudge + Enter), unreadable, authoring, drawer, outline — completes without a pointer (§12 map; acceptance-tested).
+- **Screen-reader semantics:**
+  - cards are list items with state announced ("Reporting obligation, covenanted, rent schedule, unconfirmed, confidence high");
+  - a confirmation announces the act and the next card; region lighting announces the page + section landed on;
+  - the basis badge reads as text, never as color;
+  - the progress header is a live region announcing count changes politely.
+- **Table virtualization/large data:** the card list virtualizes (an agreement + riders can propose dozens of records); the page canvas renders lazily per page with regions hydrated per visible page; uniform row heights (law 11).
+- **Loading and latency feedback:** staged extraction progress with real stage names; per-card acts are optimistic with server confirmation; a failed act surfaces on the card itself — no act is ever silently dropped.
 - **Destructive confirmation:** the only destructive-adjacent act is a correction that voids a certification — it requires the void-warning acknowledgment (typed dialog, permitted class).
 - **Certify/send safety:** upstream contribution — confirmed records are version-pinned into packages; void-on-change is automatic and visible (03 §2).
 - **Source immutability:** the viewer renders artifacts read-only; Original bytes are never mutated; derivatives always labeled.
@@ -290,12 +352,22 @@ Domain truth for terminology, expected structure, and cadence comes from the evi
 
 **Fixtures:** `CAL-6001NR-SETUP` = the Calloway Park evidence document set (Form 6001.NR + Form 6220 + Form 6241, SLOT-3) — the acceptance spine. `CAL-6001NR-NO-6241` = the same set minus the Green rider (synthetic variant). `BEXLEY-CANON` = the demo book loan (canon). `CAL-FYE2018` = the financial evidence spine for downstream references.
 
-1. **Full-pass workflow (CAL-6001NR-SETUP).** Extraction proposes, at minimum, records for: §8.02(b)(1) quarterly YTD income & expense statement, due-rule Q+45d; §8.02(b)(2)(A)/(H) annual statements incl. cash flows, FYE+120d; §8.02(b)(3) rent schedule at both cadences with named deliverable fields tenant / space / lease expiration / current rent / paid-through; §8.02(b)(2)(E) annual certification (single-asset, building-code, rezoning, liens); (F) security-deposit accounting; (G) ownership-change confirmation; §8.02(b)(4) on-request items as `conditional` with the ≤1-per-6-months rate cap noted; Form 6241 Article 16 annual ENERGY STAR report; the Form 6220 replacement-reserve modification as `operational`. Every proposal carries a verbatim quote + source region. Confirm all → setup completes → the first period's checklist materializes containing the rent-schedule and statement items (evidence: SLOT-3 §8.02(b); 05 §1.1).
+1. **Full-pass workflow (CAL-6001NR-SETUP).** Extraction proposes, at minimum, records for (evidence: SLOT-3 §8.02(b); 05 §1.1):
+   - §8.02(b)(1) — quarterly YTD income & expense statement, due-rule **Q+45d** (Q1–Q3), kind reporting-obligation, basis covenanted;
+   - §8.02(b)(2)(A)/(H) — annual statements including cash flows, due-rule **FYE+120d**;
+   - §8.02(b)(3) — rent schedule at both cadences (Q+45d and FYE+120d) with the named deliverable fields: tenant, space occupied, lease expiration, current rent, paid-through date;
+   - §8.02(b)(2)(E) — annual written certification: single-asset status, building-code notices, rezoning, liens;
+   - §8.02(b)(2)(F) — security-deposit accounting with institution/account detail;
+   - §8.02(b)(2)(G) — ownership-change confirmation;
+   - §8.02(b)(4) — on-request items as `conditional`, the ≤1-per-6-months rate cap rendered on the card;
+   - Form 6241 Article 16 — annual ENERGY STAR Energy Performance Metrics report (score, Source EUI, period, property ID) — proposed under the rider's own outline branch;
+   - Form 6220 — the replacement-reserve modification as `operational`.
+   Every proposal carries a verbatim quote + source region. Confirm all → setup completes → the first period's checklist materializes containing the rent-schedule and statement items.
 2. **The core modeling fact.** On the same fixture, assert **zero** recurring ratio-test records are proposed (the executed 6001.NR carries none — evidence), and §9.03's casualty DSCR renders as `conditional`, never as a recurring test (05 §1.1). Contrast check: a Westbrook-class fixture with a real covenanted 1.20x DSCR proposes a financial-covenant record with `basis = covenanted` (canon).
 3. **Riders change the checklist per loan.** `CAL-6001NR-SETUP` vs `CAL-6001NR-NO-6241`: the proposal sets differ by exactly one record — the annual ENERGY STAR report — proving the extracted checklist is per-loan, never templated (evidence: Form 6241; 06 §3).
 4. **Fail-closed block.** A doc set containing an unrecognized rider form yields a BlockedCard naming the form verbatim, zero guessed records from that rider, a quiet-log BlockEvent, and a working Author-manually path; the authored record enters the confirmed set with its hand-pinned region.
-5. **Enter-walk keyboarding.** From card 1: `Enter` × 3 confirms three records, focus and the lit region advance each time, the page auto-scrolls; `J/K` navigate without confirming; `E` opens an edit with the region still lit (R2: Rossum).
-6. **Lit-region provenance.** Click the §8.02(b)(3) card's source link → the agreement page lights the §8.02(b)(3) region and it stays lit (06 §3 Chain B); clicking a region on the page scrolls the inspector to its owning card. The wrong-row class of defect (U1-F1) has a regression test here.
+5. **Enter-walk keyboarding.** From card 1 of `CAL-6001NR-SETUP`: `Enter` × 3 confirms three records; after each, focus moves to the next *unconfirmed* card (skipping any already-confirmed card in between), the lit region advances, and the page auto-scrolls (R2: Rossum Enter-to-next-unvalidated). `J/K` navigate without confirming; `E` opens an edit with the region still lit; `Esc` cancels leaving the record proposed; the walk completes the entire fixture pointer-free.
+6. **Lit-region provenance.** Click the §8.02(b)(3) card's source link → the agreement page lights the §8.02(b)(3) region and it **stays lit** while the card is current (06 §3 Chain B); clicking a region on the page scrolls the inspector to its owning card; the "show all regions" toggle reveals every proposed region on the visible page. The wrong-row class of defect (U1-F1) has a named regression test here: the lit region must be the region stored on the record, byte-for-byte.
 7. **Ask-once.** After full confirmation, open two consecutive periods with unchanged facts: zero re-confirmation prompts anywhere (03 §3 acceptance test); the quiet log shows the reused-schedule entry per period.
 8. **Amendment scope.** File a modification amending §8.02(b)(1)'s due-rule: exactly that record re-opens (v1 ⇄ v2 diff, amendment region lit); all other records remain confirmed; the impact strip names the affected checklist item and composer section (02 §5).
 9. **Correction impact + void-on-change.** Correcting a confirmed loan-term (UPB) that feeds a certified package field surfaces the void warning before save; saving writes the CorrectionAct, voids the certification visibly, and the period returns to in-review (03 §2). Never silent.
@@ -304,15 +376,25 @@ Domain truth for terminology, expected structure, and cadence comes from the evi
 12. **Stale.** Replace the agreement with a corrected scan after confirmation → affected records badge stale with diff link; re-confirm clears; unaffected records untouched.
 13. **Viewport fixtures.** 1440/1728/2048/1280 per §10 ratios; the outline column appears at ≥1728; below 1152px work area the inspector tabs with the named banner — no silent compression at any width.
 14. **Accessibility.** Full pass keyboard-only on `CAL-6001NR-SETUP`; SR announces card state, basis, and act results; contrast checks on tinted regions; reduced-motion honored.
-15. **Benchmark challenger review.** Side-by-side against Rossum's validation screen on the R2 criteria (region fidelity, keyboard economy, provenance visibility): Covenant must match the Enter-walk economy and exceed on definition verbatim-ness and basis structure, or the gap is ticketed.
+15. **Data integrity.** Post-confirmation invariants asserted directly against the store:
+    - every confirmed record has either a non-null `definition_source_region` or an AuthoringAct carrying the explicit no-source declaration — no third case exists;
+    - every correction row references its prior version (no orphaned versions; history is a complete chain);
+    - the `basis` field on every stored record equals the badge every renderer painted (C-9 — no renderer-side inference path exists to diverge);
+    - a sealed period's requirement-version citations resolve to immutable versions after two subsequent amendments.
+16. **Benchmark challenger review.** Side-by-side against Rossum's validation screen on the R2 criteria (region fidelity, keyboard economy, provenance visibility): Covenant must match the Enter-walk economy and exceed on definition verbatim-ness and basis structure, or the gap is ticketed.
 
 ## 18. Build plan
 
-- **Dependencies:** F2 persistence (RequirementRecord + version tables, ExtractedValue store, tenancy FKs — snapshot gap 3); the document chain (gap 2): filed storage + four-artifact pipeline (Recreated-searchable rendering is a hard prerequisite for scan-heavy agreements); the recognized-form library for the fail-closed dispatcher; the lit-row component contract (`cross-cutting/provenance-lit-row-trace.md`) with U1-F1 fixed first.
-- **Foundation work:** wire the built loan-doc extraction library to real documents; region-anchor rendering in the DocView embed (page coordinates → highlight layer); the downstream-impact computation (requirement → checklist/test/section graph).
-- **Components first:** SourceRegionHighlight + the viewer embed → RequirementCard + BasisBadge (shared atom) → ProgressHeader → Enter-walk controller → BlockedCard + ManualAuthoringForm → DownstreamImpactStrip → AmendmentDiff/ConflictCard/ProvenanceDrawer.
+- **Dependencies (named):**
+  - F2 persistence — RequirementRecord + version tables, ExtractedValue store, tenancy FKs (snapshot gap 3); confirmation acts need real identity, so auth/tenancy precedes GA;
+  - the document chain (gap 2) — filed storage + the four-artifact pipeline; Recreated-searchable rendering is a hard prerequisite for scan-heavy agreements (evidence: zero text layer on executed forms);
+  - the recognized-form library feeding the fail-closed dispatcher (the dispatcher itself is built — snapshot §3);
+  - the lit-row component contract (`cross-cutting/provenance-lit-row-trace.md`), with the U1-F1 wrong-row defect fixed before this surface adopts the mechanic;
+  - the orchestration spine's Gate 1 hook (03 §2) for the period-exception projection.
+- **Foundation work:** wire the built loan-doc extraction library to real filed documents; region-anchor rendering in the DocView embed (page coordinates → highlight layer, bidirectional hit-testing); the downstream-impact computation (requirement → checklist/test/section dependency graph).
+- **Components to build first:** SourceRegionHighlight + the viewer embed → RequirementCard + BasisBadge (shared atom) → ProgressHeader → the Enter-walk controller → BlockedCard + ManualAuthoringForm → DownstreamImpactStrip → AmendmentDiff / ConflictCard / ProvenanceDrawer.
 - **Vertical slice (the send-vertical pattern):** one route, one loan, engine data end to end — the Calloway Park evidence set uploaded → extraction pass → proposals rendered at `/loans/[loanId]/setup` → confirmations persisted → checklist materializes for one period. No fixture strings anywhere in the slice.
 - **Migration from fixture data:** the hand-authored Bexley `deal_config` is re-expressed as confirmed RequirementRecords (it becomes the parity oracle: the confirmed set must reproduce today's engine inputs exactly before the config is retired).
 - **Rollout/feature flag:** `covenant.extraction-confirmation`; setup route ships first; the period-exception projection in Actuals/Review follows once those surfaces mount engine data.
 - **Proof artifacts:** screen recording of the full Enter-walk on `CAL-6001NR-SETUP`; region-accuracy report (every proposed region vs the page, reviewed); the two-period ask-once log (test 7); the rider-differentiation diff (test 3).
-- **Final gate:** `PASS` requires acceptance tests 1–15 green, the parity oracle clean, and the challenger review closed; anything less holds the surface at `ADJUST` behind the flag.
+- **Final gate:** `PASS` requires acceptance tests 1–16 green, the parity oracle clean, and the challenger review closed; anything less holds the surface at `ADJUST` behind the flag.

@@ -22,6 +22,8 @@
 - Exit paths: "Proceed to certify" → `/covenant/[loanId]/[period]/certificate` (enabled only at readiness true); readiness rows → owning surfaces (Actuals, Review, Intake, Documents) with return path; breadcrumb altitude gate back to Loans/Home.
 - Completion/advancement conditions: readiness true (all reasons discharged) makes the certify CTA live; the period stays `ready` while the package draft stays mutable; the certify act on the Certificate surface freezes content (05 §5; R4 research: GitHub Releases draft→publish).
 
+Boundary with the Review Room (both are per-period spine surfaces; they never duplicate): Review owns the **exception walk and dispositions** — findings, failed tie-outs, stale confirmations, changed-vs-prior stops, and the compare mode. Composer owns the **deliverable's shape and content acts** — sections, transcription answers, narrative approvals, pins, naming. The 60-second review happens in Review; the composition acts that review inspects happen here. Cross-links are structural: Review's narrative-approval stops deep-link to the Composer section; Composer's readiness rows for tests/tie-out link to Review stops. A zero-exception period may skip Composer entirely after a glance — the agent assembled everything, the needs-input count is zero, and Review's summary stop plus readiness carry the user straight to certify.
+
 ## 3. Object and ownership model
 
 | Object/action/status | Owned here? | Summary/link elsewhere | Address/identity | Notes |
@@ -36,6 +38,8 @@
 | Metric / TestResult / TieOut | NO — Actuals & Computation / Review | Rendered as locked chips and verdict rows with lit-row refs | engine grain | Disposition happens in Review, never here |
 | CertificationRecord / SendRecord | NO — Certificate / Send & Record | Certified/sent state renders as banner + hash chip | `certId` / `sendId` | Composer goes read-only when frozen |
 | MemoryEntry (form answers, naming) | NO — agent layer one-store | Rendered inline beside the fields they fill | `memId` | "learned {date} from {who}" grammar |
+| ActivityEvent slice (this package) | NO — one app-wide store | Filtered view at the rail foot | `eventId` | Append-only; 07 §2 duplication fix |
+| Deadline for this period | NO — Calendar/Obligations owns | Header readout with due-rule provenance | `noteId` | Escalation policy lives in Settings |
 
 No-double-homing boundary: Composer owns **composition** — sections, field map, narrative approval, attachment pins, export naming. Documents owns filed canon (Composer holds links, never copies — the duplication audit's fixture-array defect dies here, 07 §2). Intake/Holding owns checklist state. Actuals owns every number. Certificate owns the certify act. Review owns exception disposition.
 
@@ -58,17 +62,89 @@ Field groups and grain: organization (naming memory scope=lender lives org-wide)
 
 Derived, never hand-authored: `lender-form template ∪ RequirementRecord.deliverable[]` for this period's cadence. For the evidence loan at annual cadence this yields: statements group (§8.02(b)(2) incl. cash flows), rent schedule (§8.02(b)(3), built from the anonymized roll derivative), servicer questionnaire (the 11 questions — transcription targets), annual certification (its 3 items: security-deposit institution/account accounting, ownership-structure attachment, financial-position-change yes/no — evidence: SLOT-4), rider deliverables (Form 6241 ENERGY STAR report — exists only because this loan carries the Green rider, 06 §3), attachments (trial balance, vendor aging, loan/interest/escrow schedule per the exemplar). Quarterly cadence derives the smaller set: YTD income statement (§8.02(b)(1)), rent schedule, questionnaire (SLOT-5 evidences the recurring quarterly ask). A loan without a rider never shows the rider's section — per-loan, never templated (06 §3).
 
+### The field map (the transcription contract)
+
+Each form-kind PackageSection carries a field map binding the lender form's own fields to their fillers — the per-field lineage the chips render:
+
+```text
+PackageSection.field_map: FieldBinding[]
+FieldBinding {
+  form_field_id            ← the template's field identity (label verbatim, position, format)
+  fill:  { kind: 'engine',  value_id }            → LockedChip (uneditable; ProvenanceRef chain)
+       | { kind: 'memory',  mem_id }              → FreeTextField pre-filled + MemoryNote (editable; edit versions the entry)
+       | { kind: 'human' }                        → FreeTextField, needs-input until answered
+       | { kind: 'blocked', missing: string }     → fail-closed card (e.g. occupancy resolver pending reader — gap 7)
+  state: filled | needs-input | blocked | stale
+}
+```
+
+The map is validated by the engine against the template (every required form field bound or explicitly blocked — "sections present" consumes this); it is authored by derivation + memory, never hand-built per period.
+
 ### The questionnaire as transcription target (evidence: SLOT-4/5)
 
-The JLL Property Questionnaire's 11 questions split structurally: **engine-fillable** (occupancy by month-end dates — the occupancy chain's package terminus, 06 §4; down units from the roll status taxonomy; other-income breakdown and non-recurring expenses from normalized lines; management fee % from the mapped expense line, with the 4–6% band explanation as a free-text follow-up; 12-months-of-operations check from period coverage) and **human-answerable** (contact changes, sub-market job losses, casualty/crime, capital improvements across the form's 15 categories with expense-line separation, subordinate financing) — the latter pre-filled from lender-scope memory where previously answered, else `needs-input`. The signed certification block renders as a locked preview: signature happens at the Certificate, never here. Executed questionnaires in evidence are flattened scans with zero text layer — the Recreated-searchable artifact exists for reading them back (kit evidence; cross-cutting/documents law).
+The JLL Property Questionnaire's 11 questions, each a transcription target with a structural fill class:
+
+| # | Question (evidence) | Fill class | Source / behavior |
+|---|---|---|---|
+| 1 | Physical occupancy at each month-end of the quarter (units occupied, % of total) | engine | Occupancy chain terminus (06 §4): roll-derivative aggregates per month-end date; currently BLOCKED on the rent-roll reader (gap 7) → renders the blocked card, never a guess |
+| 2 | Ownership/management contact changes | human + memory | Pre-filled "no change" only if memory holds a prior confirmed answer AND no org-record change occurred this period; else needs-input |
+| 3 | Significant sub-market job losses / economic events | human | Needs-input each period (time-sensitive; memory never pre-fills a market judgment) |
+| 4 | Casualty / criminal activity on the property | human | Needs-input each period; a "yes" flags the narrative section for a drafted explanation |
+| 5 | Down units (number, reason, timeline) | engine + human | Admin/Down count from the roll status taxonomy (evidence: 2 Admin-Down units in SLOT-2); reason/timeline free-text |
+| 6 | Capital improvements across the form's 15 categories, separated from expense lines | engine + human | Category totals proposed from mapped capex-class lines where mappings exist; the expense-line separation renders as a chip-beside-answer check; category assignment confirmable |
+| 7 | Subordinate financing / new debt | engine + human | Supplemental-loan linkage (`supplemental_of`, 02 §1) proposes the answer; human confirms |
+| 8 | Property operated 12 full months? | engine | Period-coverage check from the T-12 month columns |
+| 9 | Other-income breakdown | engine | Normalized other-income lines (e.g. the "4135 RAF → Other Income" mapping, 06 §2) |
+| 10 | Non-recurring / extraordinary expenses | engine + human | Candidate lines proposed by variance vs prior period; inclusion is a human call with the chip beside it |
+| 11 | Management fee % (with explanation when outside the form's 4–6% band) + incentive-fee sub-questions | engine + memory | Fee % computed from the mapped fee line over collections per the form's own arithmetic; band explanation free-text, remembered lender-scope (the recurring-answer exemplar, 03 §3) |
+
+The signed certification block at the questionnaire's foot renders as a locked preview — signature happens at the Certificate, never here. Executed questionnaires in evidence are flattened scans with zero text layer — the Recreated-searchable artifact exists for reading prior submissions back (kit evidence; document-artifact law).
+
+### The annual certification as transcription target (evidence: SLOT-4)
+
+Three items, three fill classes: (1) security-deposit accounting — institution and account detail: engine-fillable from the balance-sheet/escrow schedule mappings where confirmed, institution identity from loan-scope memory ("learned at setup"); resident-level deposit detail never attaches (law below). (2) Ownership-structure attachment: an attachment pin (the exemplar package carries `Ownership Structure.pdf`) — version-pinned to Documents, staleness-checked against org records. (3) Financial-position change yes/no: human answer with the tie-out summary co-visible (the honest basis for "no").
+
+### The rent-schedule section (evidence: SLOT-3 §8.02(b)(3))
+
+The section maps anonymized roll-derivative columns onto the agreement's named fields — tenant (anonymized label), space occupied, lease expiration, current rent, paid-through date (06 chain B). The mapping is per-loan and confirmed once (the loan-scope memory question "is the PMS detail export acceptable to this servicer?" — 03 §3); the section renders the roll-derivative table read-only with its as-of date and dedup note ("322 rows → 301 units").
 
 ### Resident-data law, enforced at composition
 
-Rent schedule sections build only from the anonymized roll derivative; the attachment picker structurally refuses resident-level document classes (deposit audits, delinquency lists) for outbound sections, rendering the refusal with the rule ("resident info NEVER travels outward" — Terry ruling 2026-08-07) — not a silent absence, an explained one.
+Rent schedule sections build only from the anonymized roll derivative; the attachment picker structurally refuses resident-level document classes (deposit audits, delinquency lists) for outbound sections, rendering the refusal with the rule ("resident info NEVER travels outward" — Terry ruling 2026-08-07) — not a silent absence, an explained one. The SLOT-4 exemplar's three withheld files prove the real package historically included these classes; Covenant's package shape substitutes the anonymized rent schedule and omits the rest, stated on the section list so the preparer knows the delta from their old manual package.
+
+### What-changed-since-prior-package (right rail, below readiness)
+
+Field-level rows computed from the tie-out deltas plus composition diffs: changed engine values (field, prior → current, cause link), new/removed sections (cadence or amendment driven), replaced attachments (version chain), changed free-text answers (memory version link). Each row links to Review's 50/50 compare (Review owns compare — no second compare surface here). Zero-change periods render one line: "nothing changed beyond expected; tie-out clean" — the same sentence the Review walk uses for its summary stop (review-room brief), so the two surfaces never disagree.
+
+### Export naming and the bundle manifest (lender-scope memory)
+
+The bundle name and per-file names follow the lender's remembered convention. Evidence for the convention's reality: the SLOT-4 filenames as submitted — "{Property} {Statement} {MM.DD.YY}" (e.g. balance sheet, income statement, cash flows each named property-first with the period date). First export per lender: the agent proposes the pattern inferred from the golden exemplar's filenames; the human confirms once; MemoryEntry scope=lender stores it with provenance; every later period pre-fills silently with the "pre-filled from memory" note. Corrections version the entry (03 §3). The manifest lists every file with its section, document version, and hash — the self-contained evidence-pack discipline (R3 research: DataSnipper stores references and files in the workbook).
 
 ## 5. State machine and exceptions
 
-Package draft lifecycle (GitHub-Releases shape — assemble fully in a mutable draft; one act freezes; R4 research):
+### The five readiness reasons, defined (the computed gate this surface renders)
+
+GitHub required-checks pattern (R4): every reason a named row with granular state, linking to its blocker — never a bare disabled button. Engine-computed per 05 §5 ("readiness (boolean + reasons[])"; reasons each link to a blocking item).
+
+| Reason row | Computed predicate | State grammar | Blocker link target |
+|---|---|---|---|
+| Sections present | Every derived section exists and every required form field is bound or explicitly blocked (field-map validation) | green / "2 sections incomplete" | The first incomplete section, selected |
+| Tests verdicted | Every TestResult for the period carries a verdict AND every shortfall/breach finding is dispositioned (Review owns disposition) | green / "1 finding awaiting disposition" | The Review stop for that finding |
+| Tie-out clean | Prior-package reconciliation clean or every failed row dispositioned with reason | green / "3 fields failed tie-out" | Review's 50/50 compare on the first failed field |
+| Confirmations current | No value feeding any package field is unconfirmed, stale, or superseded (source replaced after confirmation) | green / "occupancy inputs stale" | The owning surface (Actuals exception / Extraction card) |
+| Checklist complete/waived | Every ChecklistItem for the period is arrived+matched or waived-by-named-human | green / "1 item outstanding (chased {date})" | The Holding checklist row |
+
+Readiness is the conjunction; the CTA enables only at all-green. There is no manual override, no admin bypass (R4: rejecting GitHub's bypass lists), and no path for the agent to assert a reason true — each predicate reads engine state.
+
+Failure behavior per the gate law: each red row states the exact ask ("disposition the occupancy shortfall finding"), why it blocks (the predicate), the evidence link, the affected package fields, and the consequence of delay (the deadline readout); the audit record is the readiness transition in the quiet log. A reason that cannot be computed (engine unavailable, resolver missing) renders as its own honest state — "cannot evaluate: {what's missing}" — which also blocks; unknown never passes.
+
+### Per-section status machine
+
+`awaiting-inputs → in-assembly (agent) → needs-input (human field/answer outstanding) → drafted-awaiting-approval (narratives) → complete`; any upstream change can knock a section back (`complete → stale → needs-input`), quiet-logged with the cause. Attachment sections use `expected → proposed-pin → pinned → stale-pin`. Section status rolls up to the list chips and the "sections present" reason.
+
+### Package draft lifecycle
+
+GitHub-Releases shape — assemble fully in a mutable draft; one act freezes; R4 research:
 
 | State | Trigger → next | Actor | Reversible? | Audit |
 |---|---|---|---|---|
@@ -100,19 +176,22 @@ Required states, all covered:
 
 ## 6. Engine / Agent / Human / Gate / Quiet Log
 
-| Lane | On this surface |
-|---|---|
-| ENGINE | Readiness computation (sections present, tests verdicted, tie-out clean, confirmations current, checklist complete/waived) with reasons[]; field-map validation against the template; live-ref re-render of every interpolated figure at view time (no stale numeral can render — 04 §2.1); content-hash per revision; void-on-change enforcement |
-| AGENT | Assemble sections; transcribe engine values onto the lender form per field map; draft narratives interpolating engine refs; propose free-text answers from memory with provenance; match checklist items to filed documents and propose pins; propose the export name from lender convention |
-| HUMAN | Approve/edit narratives; answer needs-input fields; include/exclude optional sections; confirm attachment pins and versions; confirm naming once per lender; final content decisions |
-| GATE | Readiness false → certify CTA disabled-with-reasons, every reason a named linked row (this surface renders the gate; the certify act itself lives on Certificate) |
-| QUIET LOG | Every assembly revision, transcription fill, draft update, pin, and naming reuse ("pre-filled from memory {ref}") — discoverable, never pushed |
+The composition chapter of the master five-lane table (04 §1), expanded to this surface's activities:
 
-Lane invariant honored: no shipping number is produced outside ENGINE; the agent transcribes and drafts around engine values, never generates them (04 §2.1).
+| Activity | ENGINE (deterministic) | AGENT (prepares/proposes) | HUMAN (typed decisions) | GATE (interrupts) | QUIET LOG |
+|---|---|---|---|---|---|
+| Section derivation | Derive list from template ∪ deliverables; validate completeness | Order proposal within form freedom | Reorder where allowed; include/exclude optional sections | Unknown form/template → fail-closed authoring card | Derivation run + template version |
+| Form transcription | Fill every `engine` binding; field-map validation; blocked-card emission where a resolver is missing | Propose `memory` fills with provenance; flag free-text needing answers | Answer/confirm free-text; correct a memory fill (versions the entry) | — | Each fill with its value_id / mem_id |
+| Narratives | Re-render interpolated figures at view time (04 §2.1); flag drafts whose figures changed | Draft prose around live refs; re-draft on request | Approve/edit (edit-diff captured → memory); re-approve after figure change | — | Draft revisions + approval acts |
+| Attachments | Staleness detection on pinned versions; resident-class refusal enforcement | Match checklist items to filed documents; propose pins | Confirm pins; choose among conflict candidates; request waive (routes to Holding) | Conflict (two candidates) surfaces as a decision | Pins, re-pins, refusals |
+| Readiness | The five predicates + conjunction; content-hash per revision; void-on-change | Explain a red row on request (grounded) | Fix via blocker links (acts happen on owning surfaces) | Readiness false → CTA disabled-with-reasons (the gate this surface renders; the certify act lives on Certificate) | Readiness transitions |
+| Export naming | Name-pattern application; per-file manifest | Propose from lender-scope memory | Confirm once per lender; correct (versions memory) | F4 absent → render-pending state, never a fake artifact | Naming confirmations + reuses |
+
+Lane invariant honored: no shipping number is produced outside ENGINE; the agent transcribes and drafts around engine values, never generates them (04 §2.1). Agent presence is contextual — the draft beside its section, the memory note beside its field, the match beside its checklist item; no chat chrome.
 
 ## 7. Information hierarchy
 
-1. Frame header: deal-scoped crumbs `Covenant / {Loan} / {Period} / Composer` (altitude gate, 08 §2) + period status chip.
+1. Frame header: deal-scoped crumbs `Covenant / {Loan} / {Period} / Composer` (altitude gate, 08 §2 — the period crumb is a switcher with status dots) + period status chip + `PackageRevisionChip` (rev + short hash) + the deadline readout for this period's governing due-rule ("due {date} · FYE+120d per §8.02(b)(2)" — computed provenance, Calendar owns the deadline).
 2. Decision/status summary: readiness summary ("3 of 5 reasons green") top of the right rail; section-status counts atop the left list.
 3. Primary work region: the center section workspace (transcription / narrative / attachments per selected section).
 4. Secondary context: what-changed-since-prior-package summary (right rail, below readiness).
@@ -126,6 +205,7 @@ Absent by design: charts (nothing here out-encodes text); any editable numeral; 
 
 | Region | Purpose · content | Persistence | Interaction | Min width | Resize/collapse |
 |---|---|---|---|---|---|
+| HEADER (48px, frame) | Deal-scoped crumbs (loan switcher + period switcher per 08 §2) · period status chip · PackageRevisionChip · deadline readout with due-rule provenance | persistent | crumb switchers; hash chip click → full hash + cert state | — | frame-owned; never collapses |
 | LEFT — section list (280px) | The package's map: derived sections, each row = icon (kind) + title + status chip (complete / needs-input / drafted-awaiting-approval / blocked) + deliverable cite on hover (e.g. "§8.02(b)(3)") | pinned | click/J-K select; drag to reorder where the form allows (drag handle only on reorderable groups); status chip filters | 240px; 56px icon-strip collapse (status dots keep meaning) | collapses to labeled icon strip below 1440 shell-expanded (§10); never silently hidden |
 | CENTER — section workspace | The selected section's work: (a) form sections → transcription view: lender form fields laid out in the form's own order; mapped engine values as **locked chips**; free-text fields editable with memory notes; (b) narrative sections → draft editor with live refs; (c) attachment sections → checklist-driven picker of Documents links, version-pinned | persistent (work window 1) | per §12 | 720px | the one big pane; paper-adjacent max-width 880px column for form/narrative rendering, centered at wide viewports |
 | RIGHT — readiness rail (320px) | COMPUTED readiness: the five reason rows, each named, stateful, linking to its blocker; below: what-changed-since-prior summary (field-level, from tie-out deltas); below: certify CTA; foot: quiet-log slice | pinned | reason row → owning surface with return path; changed-field row → compare in Review | 280px | collapses to a summary chip strip ("3/5 · view") when the Evidence split is summoned at ≤1727px; restored on dismiss |
@@ -145,15 +225,24 @@ Pane justification: the section list is navigation-with-status (map + progress �
 | Attachment pin | The filed document + version | on demand | "is this the right file/version?" | preview via DocView renderer in Evidence slot | new-tab DocView |
 | Package draft | Prior sealed package | on demand | "what changed?" | what-changed rows → Review's 50/50 compare (Review owns compare) | link-out |
 | Free-text field | Its remembered answer + provenance | always when filled | "still true?" | memory note inline beside the field | — |
+| Verdict chip (covenant section) | The requirement's definition text | on demand | "is this rendered per the loan's own definition?" | definition summonable beside the chip (05 §4 co-visibility row) | Evidence pane |
+| Export name | The lender-scope memory entry + its provenance | on confirm | "is this still the convention?" | inline note on the control | Settings → Agent memory |
 
 No pane exists merely because information exists: compare lives in Review; the Composer links to it.
 
 ## 10. Layouts and viewport behavior
 
-- 1440px (shell rail collapsed 48px → 1392 work): 280 list · 792 center · 320 rail. Shell rail expanded (240 → 1200 work): list collapses to 56px icon strip (labeled tooltip), 824 center, 320 rail — announced, not silent.
-- 1728px (rail 240 → 1488 work): 280 · 888 center (880 paper column) · 320.
-- 2048px (rail 240 → 1808 work): 280 · center grows; Evidence split fits fully: 280 list + 764 center + 764 evidence, readiness rail as chip strip until dismissed — both work windows ≥560.
-- Narrow/compact (<1280): single work window; section list and readiness become labeled tabs above the workspace ("Sections · 2 need input" / "Readiness 3/5"); Evidence is an overlay sheet. Minimum viable: the frame's 1152×720 (08 §9); below, spine surfaces show the larger-window state.
+| Viewport | Shell rail | Interior topology (px) | Evidence behavior |
+|---|---|---|---|
+| 1440px | collapsed 48 → 1392 work | 280 list · 792 center · 320 rail | summons as overlay pane docking right; readiness rail → chip strip while open |
+| 1440px | expanded 240 → 1200 work | 56 icon-strip list (labeled) · 824 center · 320 rail | same |
+| 1728px | expanded 240 → 1488 work | 280 · 888 center (880 paper column) · 320 | overlay or split; on split, rail → chip strip |
+| 2048px | expanded 240 → 1808 work | 280 · 764 center · 764 evidence (split) · rail chip strip; without evidence: 280 · ~1200 center (880 column centered) · 320 | true split, both work windows ≥560 (max-2 law) |
+| <1280 | icon rail 48 | single work window; list and readiness as labeled tabs ("Sections · 2 need input" / "Readiness 3/5") | overlay sheet |
+
+Minimum viable: the frame's 1152×720 (08 §9); below, spine surfaces show the larger-window state.
+
+Tab stacking/replacement rules: when the list and rail become tabs (<1280), they stack in a fixed order — Sections · Readiness · Activity — above the workspace; opening Evidence replaces the workspace (single window) with a persistent "back to {section}" affordance; tab badges carry the needs-input and red-reason counts so collapsed state loses no signal. Focus mode (`F`) at any width collapses both rails to strips; strips always render their counts — no state exists whose collapse hides a blocking condition.
 - Focus behavior: selecting a section scrolls the workspace to top; F toggles a focus mode that collapses both rails to strips (labeled).
 - Compare behavior: none native — changed-field rows route to Review compare.
 - Proof/source behavior: trace summons Evidence beside; the lit row persists until dismissed (cross-cutting contract §2.3).
@@ -173,7 +262,22 @@ NEW components (in `src/components/covenant/composer/`):
 - `ExportNameControl`: proposed name from lender-scope memory (evidence pattern: "{Property} {Statement} {MM.DD.YY}", SLOT-4 filenames); confirm-once; per-file names listed under the bundle name; F4-pending note where render is absent.
 - `PackageRevisionChip`: rev + content-hash short form (full on click), frozen/void/seal banners.
 
-Tables: uniform row heights, open-not-boxed. Charts: none. Icons: Lucide only.
+Template-required anatomy accounted for:
+
+- Table/data grid: the rent-schedule and statement transcription tables (uniform row heights, open-not-boxed; virtualized past ~150 rows) — reuse the register grid primitives.
+- Filters/saved views: deliberately minimal — the status-chip filter on the section list only; no saved views (a package is one object, not a register).
+- Chart/legend/readout: none (doctrine — absent by design, §7).
+- Covenant strip / headroom readout: verdict + basis-badge rows reuse the TestResult row grammar from Actuals/Review; rendered read-only on covenant-relevant sections.
+- Document viewer: DocView renderer inside the Evidence slot for attachment preview and prior-submission readback (Recreated-searchable, labeled derivative).
+- Source inspector / evidence panel: the shared Evidence pane + lit-row contract (reuse; cross-cutting §2).
+- Timeline/activity: quiet-log slice at the rail foot (filtered ActivityEvent view — one store, 07 §2).
+- Gate/finding/review object: `ReadinessRow` is this surface's gate object; findings render as links to Review stops, never dispositionable here.
+- Command action: palette entries ("Composer — {Loan} {Period}", "Proceed to certify" when enabled) via `CommandPalette` (reuse).
+- Form/request: `FormTranscription` + waive-request routing to Holding.
+- Period/package selector: breadcrumb period switcher (08 §2 — the period crumb is a selector with status dots; reuse) + `PackageRevisionChip` for revision identity.
+- Certify control: `CertifyCTA` — label "Proceed to certify", enabled state on the accent family, disabled state renders the red reason count and never a bare disabled button; the typed ceremony itself is the Certificate's (R4 ceremony-budget: zero heavy ceremony here).
+- Send control: absent by design (Send & Record brief).
+- Empty/error/recovery object: skeleton section list (empty), fail-closed template card (blocked), render-pending card (F4), stale/void banners with cause and next action (recovery).
 
 ## 12. Interaction specification
 
@@ -182,6 +286,8 @@ Tables: uniform row heights, open-not-boxed. Charts: none. Icons: Lucide only.
 - Focus: visible focus ring (ruled tokens); focus order = list → workspace → rail.
 - Keyboard: `J/K` section next/prev · `N/P` next/prev needs-input item · `Enter` open/edit field · `A` approve narrative (when focused) · `Esc` dismiss Evidence/focus mode · `⌘K` palette · `G P` here, `G V` Review, `G F` Certificate (08 §5) · `⌘↵` Proceed to certify when enabled.
 - Editing and validation: free-text saves on blur with draft autosave; template validation (required form fields) feeds "sections present"; locked chips are never editable — the edit affordance routes to the owning value with a return breadcrumb ("Back to Composer · {section}").
+- Narrative editing mechanics: the LiveRef is an atomic inline node — arrow keys skip over it, backspace/delete select it (second press does nothing but show the routing card), copy carries the rendered value + a provenance footnote, paste of external numerals into a draft is allowed as plain prose but lints in CI if it parses as a financial figure without a `value_id` (cross-cutting §3.6). Every human edit to a draft captures a diff event classed tone / structure / content-fact; content-fact edits additionally prompt "should the analyst remember this?" — accepted ones write MemoryEntries with the edit event as provenance (agent brief, LEARNING).
+- Approval mechanics: Approve is per-section, recorded with actor + draft version; a figure re-render after approval (upstream change) automatically demotes the section to drafted-awaiting-approval with the change named — approval binds to content, not to the section object (R4: GitHub's diff-state approval dismissal).
 - Bulk action: approve-all is deliberately absent for narratives (each approval is a per-section act); attachment pins confirm individually.
 - Undo/recovery: narrative versions with undo; pin changes reversible pre-freeze; no undo past certify/send by design (§5).
 - Sorting/filtering: status-chip filter on the section list; no other sorting (form order governs).
@@ -204,6 +310,15 @@ Tables: uniform row heights, open-not-boxed. Charts: none. Icons: Lucide only.
 - Motion: rail collapse and Evidence summon at 150–200ms ease; reduced-motion swaps to instant with state announced; the lit-row band never animates its persistence.
 - Long-session ergonomics: this surface targets short sessions; the needs-input walk (`N`) makes them shorter.
 
+The three-actor grammar applied to Composer atoms (06 §7, consumed not restyled):
+
+| Atom | source | inferred (proposed) | inferred (confirmed) | certified/frozen |
+|---|---|---|---|---|
+| LockedChip | n/a — chips are engine outputs over confirmed inputs | dotted provenance underline + confidence (an unconfirmed input upstream) — blocks "confirmations current" | solid provenance underline; confirmer stamp on hover | rendered inside the frozen banner context; hash chip in header |
+| LiveRef (in prose) | n/a | a draft never renders an unconfirmed value — the draft flags the gap instead | dotted-underline mono atom, hover lineage card | same atom inside the frozen read-only draft; trace still works |
+| FreeTextField | — | memory pre-fill with MemoryNote (provenance aged) | answered/approved this period | read-only text |
+| Attachment pin | links to Original bytes + hash (Documents) | proposed-pin (agent match, unconfirmed) | pinned (human-confirmed; version chip) | pinned + frozen; any re-pin is the void path |
+
 ## 14. Benchmark research and synthesis
 
 | Product | Limited role | Official evidence | Exact pattern to take | Covenant adaptation | What to reject | Why this beats alternatives |
@@ -222,7 +337,7 @@ Synthesis: Composer is original because no benchmark composes a **lender-shaped 
 
 ## 15. Domain references
 
-Terminology and expected-deliverable semantics: the JLL servicer forms themselves (SLOT-4/5 — questionnaire, annual certification), Fannie Mae Form 6001.NR §8.02(b) deliverable language (SLOT-3), Finley-class deliverables tabs (docs.finleycms.com/core-capabilities/deliverables, R3) for "what's owed to lenders on cadence" vocabulary, and the BankStride/nCino tickler model as the named anti-pattern (upload-chute compliance with no computation, R3). Domain authority does not equal visual authority: none of these products' UI is copied, and covenant semantics — every threshold, cadence, field list, and definition — come from the loan documents and Terry, never from a referenced product.
+Terminology and expected-deliverable semantics: the JLL servicer forms themselves (SLOT-4/5 — questionnaire, annual certification; the primary domain authority for what a servicer package actually asks), Fannie Mae Form 6001.NR §8.02(b) deliverable language (SLOT-3 — the contractual source of section names, cadences, and the rent-schedule field list), Finley-class deliverables tabs (docs.finleycms.com/core-capabilities/deliverables, R3) for "what's owed to lenders on cadence" vocabulary, Avalara Managed Returns (help.avalara.com, R4) for the review-artifact-before-approval rhythm on regulatory submissions, and the BankStride/nCino tickler model as the named anti-pattern (upload-chute compliance with no computation, R3). Domain authority does not equal visual authority: none of these products' UI is copied, and covenant semantics — every threshold, cadence, field list, and definition — come from the loan documents and Terry, never from a referenced product. Where this brief names form content (the 11 questions, the 3 certification items, the rent-schedule fields), it quotes the evidence kit; any other lender's form enters the product only through its own template registry entry, never by analogy to JLL's.
 
 ## 16. Accessibility, performance, and safety
 
@@ -234,7 +349,8 @@ Terminology and expected-deliverable semantics: the JLL servicer forms themselve
 - Destructive confirmation: nothing destructive lives here; unpin/unapprove are reversible pre-freeze.
 - Certify/send safety: this surface can never mutate a frozen package silently — edits against frozen state surface the void path explicitly; approved-bytes and the ceremonies belong to Certificate/Send; readiness is engine-computed with no manual override.
 - Source immutability: attachments are links to Documents originals (immutable bytes + hash); Composer stores pins, never copies.
-- Auditability: every approval, answer, pin, reorder, and naming confirmation is an ActivityEvent with actor + refs; package revisions and hashes are reconstructable per rev.
+- Auditability: every approval, answer, pin, reorder, and naming confirmation is an ActivityEvent with actor + refs; package revisions and hashes are reconstructable per rev; a sealed period's Composer view re-renders any historical rev read-only with its traces intact (seal-not-wipe).
+- Honest failure surfaces: engine unavailable → "readiness unavailable" (never fixture-green); template missing → fail-closed authoring card; resolver missing (occupancy, gap 7) → blocked card naming the missing reader. Fixture-era plausible placeholders are the retired anti-pattern (04 §2.5).
 
 ## 17. Acceptance tests and fixtures
 
@@ -254,15 +370,29 @@ Fixtures: **CAL-FYE2018** (Calloway Park annual: SLOT-1 T-12, SLOT-2 roll deriva
 12. Viewports: 1440 (both rail modes), 1728, 2048 (Evidence split, both windows ≥560, readiness chip-strip), <1280 tabs — no silent compression at any breakpoint.
 13. Keyboard: full loop — `G P` → `N` to first needs-input → answer → `A` approve narrative → `⌘↵` at readiness true lands on Certificate; screen-reader announcements per §16.
 14. Vocabulary: BEX-Q renders "shortfall" with the monitored basis badge everywhere on this surface; the string "breach" is unreachable for monitored fixtures (structural test).
-15. Benchmark challenger review: walk the surface against the §14 take/reject rows; any regression to a bare disabled button, an editable numeral, or a copied document list fails.
+15. Workflow fixture, full period (CAL-Q2-2018, arrival to sealed): documents arrive → recognition/holding advance → extraction/normalization/computation complete → Composer derives sections and fills chips → human answers the needs-input walk → readiness all-green → certify on Certificate freezes rev 1 → send seals → the sealed Composer view renders read-only with every trace still working (seal-not-wipe). The whole pass through this surface takes under 5 minutes for the fixture operator.
+16. Data integrity: re-rendering the same rev produces a byte-identical content hash (hash stability); any content change (a re-pin, an edited answer, an approved narrative edit) increments rev and changes the hash; the hash chip always matches the engine's current computation.
+17. What-changed honesty: with a zero-delta fixture the summary renders the one-line clean sentence; with the CAL-FYE2018 fixture modified on one normalized line, exactly that field appears as a changed row with cause link.
+18. Resident-data law: the rent-schedule section renders only anonymized labels; a fixture attachment of class deposit-audit is refused with the rule text; no outbound bundle manifest can include a resident-level class (structural test on the bundle builder).
+19. Accessibility: axe-clean at all breakpoints; LockedChip/LiveRef announcements per §16 verified with a screen reader script; the readiness rail reads as a list with states; keyboard-only operator completes test 15's Composer segment.
+20. Section-status rollup: answering the last needs-input field in the questionnaire flips its SectionRow to complete, decrements the list-header CountBadge, and flips "sections present" green in the same render pass — one source of truth, three projections.
+21. Reorder constraint: drag handles render only on the template's reorderable groups; a form-fixed section (the questionnaire's field order) exposes no reorder affordance anywhere, including keyboard.
+22. F4 honesty: with rendering absent, the export control lists render-pending rows for form/narrative sections and real files for pinned attachments; no code path produces a placeholder PDF (negative test on the bundle builder).
+23. Deadline provenance: the header readout renders "due {date} · FYE+120d per §8.02(b)(2)" from the requirement's due-rule for CAL-FYE2018 — computed, not hand-labeled; clicking opens the Calendar row.
+24. Benchmark challenger review: walk the surface against the §14 take/reject rows; any regression to a bare disabled button, an editable numeral, a manual readiness override, or a copied document list fails.
 
 ## 18. Build plan
 
 - Dependencies: F2 persistence (packages, sections, pins, revisions — today's five migrations are mostly contract-only, snapshot); the orchestration spine (V-series) for period status; cross-cutting provenance contract (Figure/traceToEvidence) landed first; lender-form template registry (NEW — seeded from the JLL evidence forms); memory store (agent brief); **F4 PDF/XLSX rendering** (gap 4) for the outbound artifact — until it lands, the composed package renders on-screen and export controls state "render pending (F4)" honestly; the send transport meanwhile delivers filed source attachments only.
-- Foundation work: template registry schema + the CAL/JLL seed; section-derivation function (template ∪ deliverables) in `src/lib/covenant/` with the rider fixture test; readiness reasons[] API on Package (engine).
+
+The F4 dependency, stated honestly on-surface and in sequencing: Composer's transcription, narratives, readiness, and pins are all buildable and testable before F4 — but the outbound artifact for form/narrative sections does not exist until F4 renders them. The interim contract: (a) the export control shows the bundle manifest with render-pending rows for unrendered sections, (b) readiness stays a composition gate (its five reasons do not include "artifact rendered" — that is a send-side concern the Send brief owns), (c) no placeholder PDF is ever generated (fail-closed honesty; 04 §2.5). This ordering is deliberate: computed readiness is the gap-4 item this brief retires; rendering is the gap-4 item F4 retires.
+
+- Foundation work: template registry schema + the CAL/JLL seed; section-derivation function (template ∪ deliverables) in `src/lib/covenant/` with the rider fixture test; readiness reasons[] API on Package (engine); field-map validator.
 - Components first: ReadinessRail (kills decorative readiness — the highest-leverage fix), then FormTranscription with LockedChip (wraps `<Figure>`), then NarrativeEditor/LiveRef, then AttachmentChecklist/VersionPin, then SectionList reorder, then ExportNameControl.
+- Build order rationale: ReadinessRail first because it converts the surface's central lie (decorative readiness) into the product's central promise (computed gate) with the smallest component; transcription second because it is where the SLOT-4 evidence shape becomes visible product; narratives third because LiveRef depends on the interpolation API landing in the agent lane.
 - Vertical slice (send-vertical pattern): one route `/covenant/[loanId]/[period]/composer`, CAL-Q2-2018 quarterly fixture end to end — derived sections, engine-filled questionnaire chips with working traces, computed readiness gating the CTA, into the existing certificate route and the REAL send gate.
 - Migration from fixture data: the current Composer view's fixture arrays retire against `book.ts` decommission; CI counts ref-less `<Figure>`s toward the burndown (cross-cutting §5).
 - Rollout/feature flag: `composer-computed-readiness` flag; decorative readiness path deleted (not flagged off) once the slice passes — the honest state must not be optional.
-- Proof artifacts: recorded walkthrough of test 4's lineage chain; readiness fixture matrix (test 6); the void-on-change capture (test 8).
-- Final gate: `ADJUST` confirmed — chassis and framing kept; readiness, locking, live refs, pins, and naming memory are the adjustments; re-verdict after the vertical slice against tests 1–15.
+- Proof artifacts: recorded walkthrough of test 4's lineage chain (chip → lit source cell on the real T-12); the readiness fixture matrix (test 6 — one screenshot per blocked reason with its link target); the void-on-change capture (test 8); the derived-section diff for the rider fixture (test 1); the CI burndown count of ref-less figures at slice completion.
+- Rollout: behind `composer-computed-readiness` for the slice period only; the deep route ships with the `(covenant)` route-group wave; `/review-room`'s Composer view continues mounting the same component (one component, two mounts) until the route wave completes.
+- Final gate: `ADJUST` confirmed — chassis and framing kept; readiness, locking, live refs, pins, and naming memory are the adjustments; re-verdict after the vertical slice against tests 1–24.
